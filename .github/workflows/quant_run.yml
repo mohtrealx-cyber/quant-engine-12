@@ -26,39 +26,55 @@ jobs:
       contents: write
 
     steps:
+
       # ============================================================
-      # 1. CHECKOUT
+      # 1. CHECKOUT CURRENT MAIN BRANCH
       # ============================================================
       - name: Checkout Repository
         uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
 
       # ============================================================
-      # 2. VERIFY REPOSITORY FILES
+      # 2. VERIFY CURRENT REPOSITORY
       # ============================================================
       - name: Verify Repository
         run: |
-          echo "Current directory:"
+          echo "=========================================="
+          echo "REPOSITORY VERIFICATION"
+          echo "=========================================="
+
+          echo ""
+          echo "Working directory:"
           pwd
+
+          echo ""
+          echo "Current branch:"
+          git branch --show-current
+
+          echo ""
+          echo "Current commit:"
+          git rev-parse --short HEAD
+
+          echo ""
+          echo "Latest origin/main commit:"
+          git rev-parse --short origin/main
 
           echo ""
           echo "Repository files:"
           ls -la
 
           echo ""
-          echo "Git branch:"
-          git branch --show-current
-
-          echo ""
-          echo "Git commit:"
-          git rev-parse --short HEAD
-
-          echo ""
-          echo "Checking required files:"
+          echo "Checking required files..."
 
           if [ -f "requirements.txt" ]; then
             echo "✅ requirements.txt FOUND"
           else
             echo "❌ requirements.txt NOT FOUND"
+            echo ""
+            echo "Files currently present:"
+            find . -maxdepth 2 -type f | sort
             exit 1
           fi
 
@@ -68,6 +84,11 @@ jobs:
             echo "❌ quant_engine.py NOT FOUND"
             exit 1
           fi
+
+          echo ""
+          echo "=========================================="
+          echo "REPOSITORY CHECK PASSED"
+          echo "=========================================="
 
       # ============================================================
       # 3. SET UP PYTHON
@@ -82,12 +103,19 @@ jobs:
       # ============================================================
       - name: Install Dependencies
         run: |
+          echo "=========================================="
+          echo "INSTALLING DEPENDENCIES"
+          echo "=========================================="
+
           python --version
           python -m pip --version
 
           python -m pip install --upgrade pip
 
           pip install -r requirements.txt
+
+          echo ""
+          echo "✅ Dependencies installed successfully"
 
       # ============================================================
       # 5. RUN QUANT ENGINE
@@ -106,6 +134,10 @@ jobs:
           FORCE_RUN: ${{ inputs.force_run }}
 
         run: |
+          echo "=========================================="
+          echo "STARTING QUANT ENGINE"
+          echo "=========================================="
+
           python quant_engine.py
 
       # ============================================================
