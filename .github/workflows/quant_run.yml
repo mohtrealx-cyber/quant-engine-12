@@ -2,16 +2,18 @@ name: Quant Engine Automation
 
 on:
   schedule:
-    - cron: '0 2 * * *' # 2:00 AM UTC = 5:00 AM EAT
+    # 02:00 UTC = 05:00 EAT
+    - cron: '0 2 * * *'
+
   workflow_dispatch:
     inputs:
       force_run:
-        description: 'Force Run (Bypass 5:00 AM EAT lock & Rescrape)'
+        description: 'Force Run (Bypass 05:00 EAT lock & Rescrape)'
         required: false
         type: boolean
         default: false
 
-concurrency: 
+concurrency:
   group: engine
   cancel-in-progress: true
 
@@ -24,37 +26,103 @@ jobs:
       contents: write
 
     steps:
+      # ============================================================
+      # 1. CHECKOUT
+      # ============================================================
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
+      # ============================================================
+      # 2. VERIFY REPOSITORY FILES
+      # ============================================================
+      - name: Verify Repository
+        run: |
+          echo "Current directory:"
+          pwd
+
+          echo ""
+          echo "Repository files:"
+          ls -la
+
+          echo ""
+          echo "Git branch:"
+          git branch --show-current
+
+          echo ""
+          echo "Git commit:"
+          git rev-parse --short HEAD
+
+          echo ""
+          echo "Checking required files:"
+
+          if [ -f "requirements.txt" ]; then
+            echo "✅ requirements.txt FOUND"
+          else
+            echo "❌ requirements.txt NOT FOUND"
+            exit 1
+          fi
+
+          if [ -f "quant_engine.py" ]; then
+            echo "✅ quant_engine.py FOUND"
+          else
+            echo "❌ quant_engine.py NOT FOUND"
+            exit 1
+          fi
+
+      # ============================================================
+      # 3. SET UP PYTHON
+      # ============================================================
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v7
         with:
           python-version: '3.10'
-          cache: 'pip'
 
+      # ============================================================
+      # 4. INSTALL DEPENDENCIES
+      # ============================================================
       - name: Install Dependencies
         run: |
+          python --version
+          python -m pip --version
+
           python -m pip install --upgrade pip
+
           pip install -r requirements.txt
 
+      # ============================================================
+      # 5. RUN QUANT ENGINE
+      # ============================================================
       - name: Run Quant Engine
         env:
           TRACKER_TELEGRAM_TOKEN: ${{ secrets.TRACKER_TELEGRAM_TOKEN }}
           TRACKER_TELEGRAM_CHAT_ID: ${{ secrets.TRACKER_TELEGRAM_CHAT_ID }}
+
           QUANT_TELEGRAM_TOKEN: ${{ secrets.QUANT_TELEGRAM_TOKEN }}
           QUANT_TELEGRAM_CHAT_ID: ${{ secrets.QUANT_TELEGRAM_CHAT_ID }}
+
           SCRAPER_API_KEY: ${{ secrets.SCRAPER_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          FORCE_RUN: ${{ inputs.force_run }}
-        run: python quant_engine.py
 
+          FORCE_RUN: ${{ inputs.force_run }}
+
+        run: |
+          python quant_engine.py
+
+      # ============================================================
+      # 6. SAVE MEMORY FILE
+      # ============================================================
       - name: Commit Memory File Back to GitHub
         if: always()
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "Titan Automator"
+
           git add pending_tickets.json || true
-          git commit -m "Auto-update memory notebook with today's matches" || echo "No new matches to save"
+
+          git commit \
+            -m "Auto-update memory notebook with today's matches" \
+            || echo "No new matches to save"
+
           git pull --rebase origin main || true
+
           git push origin main || true
