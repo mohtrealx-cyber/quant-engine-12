@@ -1,9 +1,4 @@
-import importlib.util
-
-MODULE_PATH = "/mnt/data/quant_engine_with_golsinyali.py"
-spec = importlib.util.spec_from_file_location("quant_engine", MODULE_PATH)
-mod = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(mod)
+import quant_engine as mod
 
 SPORTS_EVENT_HTML = '''
 <html><head><script type="application/ld+json">
@@ -33,6 +28,19 @@ BALANCED_HTML = '''
 </script></head></html>
 '''
 
+MS1_HTML = '''
+<html><head><script type="application/ld+json">
+{
+  "@type":"SportsEvent",
+  "description":"Example FC vs Sample FC prediction. Pick: MS1",
+  "startDate":"2026-09-19T21:00:00.000Z",
+  "homeTeam":{"name":"Example FC"},
+  "awayTeam":{"name":"Sample FC"},
+  "eventStatus":"https://schema.org/EventScheduled"
+}
+</script></head></html>
+'''
+
 LINKS_HTML = '''
 <html><body>
 <a href="/en/match/1001/arsenal-chelsea">Arsenal Chelsea</a>
@@ -50,11 +58,13 @@ engine = mod.ConsensusEngine(configs)
 
 home_event = engine._golsinyali_extract_sports_event_jsonld(SPORTS_EVENT_HTML)
 balanced_event = engine._golsinyali_extract_sports_event_jsonld(BALANCED_HTML)
+ms1_event = engine._golsinyali_extract_sports_event_jsonld(MS1_HTML)
 
 assert home_event["homeTeam"]["name"] == "Arsenal"
 assert home_event["awayTeam"]["name"] == "Chelsea"
 assert engine._golsinyali_extract_prediction(home_event, SPORTS_EVENT_HTML) == "HOME"
 assert engine._golsinyali_extract_prediction(balanced_event, BALANCED_HTML) == "HOME"
+assert engine._golsinyali_extract_prediction(ms1_event, MS1_HTML) == "HOME"
 
 mapping = {
     engine.GOLSINYALI_PREDICTIONS_URL: LINKS_HTML,
@@ -64,17 +74,28 @@ mapping = {
 
 engine.GOLSINYALI_REQUEST_DELAY_SECONDS = 0
 engine.GOLSINYALI_MAX_MATCH_PAGES = 10
-engine._fetch_golsinyali_html = lambda url: mapping[url]
+engine._fetch_golsinyali_html = lambda url, referer=None: mapping[url]
 engine.fetch_golsinyali_sync()
 
 assert engine.diagnostics["Golsinyali"].startswith("🟢 OK")
 assert ("Golsinyali", "1") in engine.master_matrix["Arsenal vs Chelsea"]
 assert ("Golsinyali", "1") in engine.master_matrix["Liverpool vs Manchester United"]
 
+# Verify that candidate filtering prefers fixtures already known to the engine.
+engine.master_matrix.clear()
+engine.master_matrix["Arsenal vs Chelsea"] = [("Statarea", "1")]
+score = engine._golsinyali_candidate_score(
+    "Arsenal Chelsea",
+    engine.GOLSINYALI_BASE_URL + "/en/match/1001/arsenal-chelsea",
+)
+assert score >= 9
+
 print("PASS: Golsinyali registered in source configuration")
 print("PASS: SportsEvent JSON-LD extraction")
 print("PASS: HOME prediction extraction")
 print("PASS: Balanced probability extraction")
+print("PASS: MS1 prediction extraction")
+print("PASS: Candidate fixture scoring")
 print("PASS: End-to-end master_matrix ingestion")
 print("PASS: Golsinyali included in 6-source consensus roster")
 print("ALL GOLSINYALI INTEGRATION TESTS PASSED")
