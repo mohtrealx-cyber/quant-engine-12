@@ -27,6 +27,11 @@ def get_dynamic_configs():
     cb = int(time.time())
 
     return {
+        "Golsinyali": {
+            "url": "https://www.golsinyali.com/en/predictions",
+            "fallback_url": None,
+            "use_scraperapi": False
+        },
         "Statarea": {
             "url": f"https://www.statarea.com/predictions/date/{today_date}/",
             "fallback_url": None,
@@ -175,7 +180,370 @@ class ConsensusEngine:
 
         self.diagnostics["Corners_Engine"] = "🔴 TIMEOUT/ERROR"
 
+    # ==========================================================================
+    # GOLSINYALI DEDICATED ADAPTER
+    # ==========================================================================
+
+    GOLSINYALI_BASE_URL = "https://www.golsinyali.com"
+    GOLSINYALI_PREDICTIONS_URL = f"{GOLSINYALI_BASE_URL}/en/predictions"
+    GOLSINYALI_REQUEST_TIMEOUT = 30
+    GOLSINYALI_MAX_MATCH_PAGES = 40
+    GOLSINYALI_REQUEST_DELAY_SECONDS = 1.0
+    GOLSINYALI_MAX_RETRIES = 2
+    GOLSINYALI_MAX_RETRY_WAIT_SECONDS = 15.0
+    GOLSINYALI_USER_AGENT = (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/139.0.0.0 Safari/537.36"
+    )
+
+    @staticmethod
+    def _golsinyali_parse_iso_datetime(value):
+        if not value:
+            return None
+        try:
+            parsed = datetime.datetime.fromisoformat(
+                str(value).strip().replace("Z", "+00:00")
+            )
+        except ValueError:
+            return None
+
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=datetime.timezone.utc)
+
+        return parsed.astimezone(datetime.timezone.utc)
+
+    @staticmethod
+    def _golsinyali_extract_sports_event_jsonld(html):
+        soup = BeautifulSoup(html, "html.parser")
+        for script in soup.find_all("script", type="application/ld+json"):
+            raw = script.string
+            if not raw:
+                continue
+
+            try:
+                data = json.loads(raw)
+            except (TypeError, ValueError):
+                continue
+
+            candidates = data if isinstance(data, list) else [data]
+            for item in candidates:
+                if not isinstance(item, dict):
+                    continue
+
+                if item.get("@type") == "SportsEvent":
+                    return item
+
+                graph = item.get("@graph")
+                if isinstance(graph, list):
+                    for graph_item in graph:
+                        if (
+                            isinstance(graph_item, dict)
+                            and graph_item.get("@type") == "SportsEvent"
+                        ):
+                            return graph_item
+
+        return None
+
+    @staticmethod
+    def _golsinyali_extract_team_name(value):
+        if isinstance(value, dict):
+            name = value.get("name")
+            if isinstance(name, str) and name.strip():
+                return name.strip()
+
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+
+        return None
+
+    @classmethod
+    def _golsinyali_extract_fixture_metadata(cls, sports_event):
+        home = cls._golsinyali_extract_team_name(sports_event.get("homeTeam"))
+        away = cls._golsinyali_extract_team_name(sports_event.get("awayTeam"))
+        kickoff = cls._golsinyali_parse_iso_datetime(
+            sports_event.get("startDate")
+        )
+
+        organizer = sports_event.get("organizer")
+        competition = None
+        if isinstance(organizer, dict):
+            competition = organizer.get("name")
+        elif isinstance(organizer, str):
+            competition = organizer
+
+        if not home or not away or not kickoff:
+            return None
+
+        return {
+            "home_team": home,
+            "away_team": away,
+            "kickoff": kickoff,
+            "competition": competition,
+            "description": sports_event.get("description"),
+            "event_status": sports_event.get("eventStatus"),
+        }
+
+    @staticmethod
+    def _golsinyali_extract_prediction_from_description(description):
+        if not description:
+            return None
+
+        lowered = str(description).lower()
+
+        if "home win" in lowered:
+            return "HOME"
+        if "away win" in lowered:
+            return "AWAY"
+        if "draw" in lowered:
+            return "DRAW"
+
+        marker = lowered.find("balanced match")
+        if marker >= 0:
+            balanced_text = str(description)[marker:]
+            probabilities = re.search(
+                r"\((\d+(?:\.\d+)?)%\s*-\s*"
+                r"(\d+(?:\.\d+)?)%\s*-\s*"
+                r"(\d+(?:\.\d+)?)%\)",
+                balanced_text,
+            )
+
+            if probabilities:
+                values = {
+                    "HOME": float(probabilities.group(1)),
+                    "DRAW": float(probabilities.group(2)),
+                    "AWAY": float(probabilities.group(3)),
+                }
+                return max(values, key=values.get)
+
+        return None
+
+    @classmethod
+    def _golsinyali_extract_prediction(cls, sports_event, html):
+        prediction = cls._golsinyali_extract_prediction_from_description(
+            sports_event.get("description")
+        )
+        if prediction is not None:
+            return prediction
+
+        lowered = html.lower()
+        patterns = [
+            (
+                r"home\s+(?:win\s+)?(\d+(?:\.\d+)?)%\s*"
+                r"(?:probability|chance)",
+                "HOME",
+            ),
+            (
+                r"away\s+(?:win\s+)?(\d+(?:\.\d+)?)%\s*"
+                r"(?:probability|chance)",
+                "AWAY",
+            ),
+        ]
+
+        for pattern, selection in patterns:
+            if re.search(pattern, lowered):
+                return selection
+
+        return None
+
+    def _fetch_golsinyali_html(self, url):
+        headers = {
+            "User-Agent": self.GOLSINYALI_USER_AGENT,
+            "Accept": (
+                "text/html,application/xhtml+xml,application/xml;"
+                "q=0.9,*/*;q=0.8"
+            ),
+            "Accept-Language": "en-US,en;q=0.9",
+            "Connection": "keep-alive",
+        }
+
+        last_error = None
+
+        for attempt in range(1, self.GOLSINYALI_MAX_RETRIES + 1):
+            try:
+                response = requests.get(
+                    url,
+                    headers=headers,
+                    timeout=self.GOLSINYALI_REQUEST_TIMEOUT,
+                )
+
+                if response.status_code == 429:
+                    retry_after = response.headers.get("Retry-After")
+                    try:
+                        wait_seconds = (
+                            float(retry_after)
+                            if retry_after
+                            else self.GOLSINYALI_REQUEST_DELAY_SECONDS * attempt * 2
+                        )
+                    except (TypeError, ValueError):
+                        wait_seconds = self.GOLSINYALI_REQUEST_DELAY_SECONDS * attempt
+
+                    wait_seconds = min(
+                        max(0.0, wait_seconds),
+                        self.GOLSINYALI_MAX_RETRY_WAIT_SECONDS,
+                    )
+
+                    self.diagnostics["Golsinyali_RateLimit"] = (
+                        f"🟡 HTTP 429; waiting {wait_seconds:.1f}s"
+                    )
+
+                    if attempt < self.GOLSINYALI_MAX_RETRIES and wait_seconds > 0:
+                        time.sleep(wait_seconds)
+                    continue
+
+                response.raise_for_status()
+                html = response.text
+
+                if not html.strip():
+                    raise RuntimeError("Empty response")
+
+                return html
+
+            except requests.RequestException as exc:
+                last_error = exc
+                if attempt < self.GOLSINYALI_MAX_RETRIES:
+                    wait_seconds = min(
+                        self.GOLSINYALI_REQUEST_DELAY_SECONDS * attempt,
+                        self.GOLSINYALI_MAX_RETRY_WAIT_SECONDS,
+                    )
+                    if wait_seconds > 0:
+                        time.sleep(wait_seconds)
+
+            except Exception as exc:
+                last_error = exc
+                if attempt < self.GOLSINYALI_MAX_RETRIES:
+                    time.sleep(
+                        min(
+                            self.GOLSINYALI_REQUEST_DELAY_SECONDS * attempt,
+                            self.GOLSINYALI_MAX_RETRY_WAIT_SECONDS,
+                        )
+                    )
+
+        raise RuntimeError(
+            f"Golsinyali request failed for {url}: {last_error}"
+        )
+
+    def fetch_golsinyali_sync(self):
+        """Fetch Golsinyali match pages and add normalized predictions to consensus."""
+        try:
+            predictions_html = self._fetch_golsinyali_html(
+                self.GOLSINYALI_PREDICTIONS_URL
+            )
+
+            soup = BeautifulSoup(predictions_html, "html.parser")
+            links = []
+            seen = set()
+
+            for anchor in soup.find_all("a", href=True):
+                href = anchor["href"].strip()
+                if not href.startswith("/en/match/"):
+                    continue
+
+                url = f"{self.GOLSINYALI_BASE_URL}{href}"
+                if url in seen:
+                    continue
+
+                seen.add(url)
+                links.append(url)
+
+            if not links:
+                self.diagnostics["Golsinyali"] = (
+                    "🟡 BLOCKED (No match links found)"
+                )
+                return
+
+            links = links[: self.GOLSINYALI_MAX_MATCH_PAGES]
+
+            eat_tz = datetime.timezone(datetime.timedelta(hours=3))
+            today_eat = (
+                datetime.datetime.now(datetime.timezone.utc)
+                .astimezone(eat_tz)
+                .date()
+            )
+
+            valid_count = 0
+            skipped_count = 0
+            failed_count = 0
+
+            for link in links:
+                try:
+                    if self.GOLSINYALI_REQUEST_DELAY_SECONDS > 0:
+                        time.sleep(self.GOLSINYALI_REQUEST_DELAY_SECONDS)
+
+                    match_html = self._fetch_golsinyali_html(link)
+                    sports_event = self._golsinyali_extract_sports_event_jsonld(
+                        match_html
+                    )
+                    if sports_event is None:
+                        failed_count += 1
+                        continue
+
+                    metadata = self._golsinyali_extract_fixture_metadata(
+                        sports_event
+                    )
+                    if metadata is None:
+                        failed_count += 1
+                        continue
+
+                    kickoff_eat = metadata["kickoff"].astimezone(eat_tz)
+                    if kickoff_eat.date() != today_eat:
+                        skipped_count += 1
+                        continue
+
+                    event_status = str(metadata.get("event_status") or "").lower()
+                    if any(
+                        flag in event_status
+                        for flag in (
+                            "postponed",
+                            "cancelled",
+                            "canceled",
+                            "finished",
+                        )
+                    ):
+                        skipped_count += 1
+                        continue
+
+                    prediction = self._golsinyali_extract_prediction(
+                        sports_event,
+                        match_html,
+                    )
+                    if prediction is None:
+                        skipped_count += 1
+                        continue
+
+                    self.log_prediction_qa(
+                        "Golsinyali",
+                        metadata["home_team"],
+                        metadata["away_team"],
+                        prediction,
+                    )
+                    valid_count += 1
+
+                except Exception as exc:
+                    failed_count += 1
+                    print(
+                        f"Golsinyali: failed to process {link}: {exc}"
+                    )
+
+            if valid_count > 0 or skipped_count > 0:
+                self.diagnostics["Golsinyali"] = (
+                    f"🟢 OK ({valid_count} Today | "
+                    f"{skipped_count} Skipped | "
+                    f"{failed_count} Failed)"
+                )
+            else:
+                self.diagnostics["Golsinyali"] = (
+                    "🟡 BLOCKED (No usable predictions found)"
+                )
+
+        except Exception as exc:
+            self.diagnostics["Golsinyali"] = f"🔴 FAILED ({exc})"
+
     def fetch_and_scrape_sync(self, site_name, cfg):
+        if site_name == "Golsinyali":
+            self.fetch_golsinyali_sync()
+            return
+
         max_attempts = 3
         last_status = None
         target_url = cfg["url"]
@@ -368,7 +736,14 @@ class ConsensusEngine:
         structured_tickets = []
         ai_input_data = []
 
-        all_scrapers = ["Statarea", "Vitibet", "PredictZ", "WinDrawWin", "SoccerVista"]
+        all_scrapers = [
+            "Golsinyali",
+            "Statarea",
+            "Vitibet",
+            "PredictZ",
+            "WinDrawWin",
+            "SoccerVista",
+        ]
         
         required_consensus = 3 
 
