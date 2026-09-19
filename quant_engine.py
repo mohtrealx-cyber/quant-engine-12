@@ -32,6 +32,11 @@ def get_dynamic_configs():
             "fallback_url": None,
             "use_scraperapi": False
         },
+        "Expected90": {
+            "url": "https://expected90.com/football-predictions",
+            "fallback_url": None,
+            "use_scraperapi": False
+        },
         "Statarea": {
             "url": f"https://www.statarea.com/predictions/date/{today_date}/",
             "fallback_url": None,
@@ -688,9 +693,374 @@ class ConsensusEngine:
         except Exception as exc:
             self.diagnostics["Golsinyali"] = f"🔴 FAILED ({exc})"
 
+    # ==========================================================================
+    # EXPECTED90 DEDICATED ADAPTER
+    # ==========================================================================
+    EXPECTED90_BASE_URL = "https://expected90.com"
+    EXPECTED90_PREDICTIONS_URL = f"{EXPECTED90_BASE_URL}/football-predictions"
+    EXPECTED90_REQUEST_TIMEOUT = 30
+    EXPECTED90_MAX_MATCH_PAGES = 60
+    EXPECTED90_USER_AGENT = (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/140.0 Safari/537.36"
+    )
+
+    def _fetch_expected90_html(self, url, referer=None):
+        headers = {
+            "User-Agent": self.EXPECTED90_USER_AGENT,
+            "Accept": (
+                "text/html,application/xhtml+xml,application/xml;"
+                "q=0.9,image/avif,image/webp,*/*;q=0.8"
+            ),
+            "Accept-Language": "en-US,en;q=0.9",
+            "Cache-Control": "no-cache",
+            "Pragma": "no-cache",
+        }
+        if referer:
+            headers["Referer"] = referer
+
+        response = requests.get(
+            url,
+            headers=headers,
+            timeout=self.EXPECTED90_REQUEST_TIMEOUT,
+        )
+
+        if response.status_code != 200:
+            raise RuntimeError(
+                f"Expected90 returned HTTP {response.status_code}"
+            )
+
+        html = response.text
+        if not html.strip():
+            raise RuntimeError("Expected90 returned an empty response.")
+
+        return html
+
+    @staticmethod
+    def _expected90_parse_json_ld(html):
+        soup = BeautifulSoup(html, "html.parser")
+        objects = []
+
+        for script in soup.find_all("script", type="application/ld+json"):
+            raw = (script.string or script.get_text() or "").strip()
+            if not raw:
+                continue
+
+            try:
+                parsed = json.loads(raw)
+            except (TypeError, ValueError):
+                continue
+
+            if isinstance(parsed, list):
+                objects.extend(parsed)
+            else:
+                objects.append(parsed)
+
+        return objects
+
+    @staticmethod
+    def _expected90_find_sports_event(objects):
+        for obj in objects:
+            if not isinstance(obj, dict):
+                continue
+
+            if obj.get("@type") == "SportsEvent":
+                return obj
+
+            graph = obj.get("@graph")
+            if isinstance(graph, list):
+                for graph_item in graph:
+                    if (
+                        isinstance(graph_item, dict)
+                        and graph_item.get("@type") == "SportsEvent"
+                    ):
+                        return graph_item
+
+        return None
+
+    @staticmethod
+    def _expected90_parse_kickoff(value):
+        if not value:
+            return None
+
+        text = str(value).strip()
+        candidates = [text, text.replace("Z", "+00:00")]
+
+        for candidate in candidates:
+            try:
+                parsed = datetime.datetime.fromisoformat(candidate)
+            except ValueError:
+                continue
+
+            if parsed.tzinfo is None:
+                parsed = parsed.replace(tzinfo=datetime.timezone.utc)
+
+            return parsed.astimezone(datetime.timezone.utc)
+
+        return None
+
+    @staticmethod
+    def _expected90_extract_probabilities(description):
+        if not description:
+            return None
+
+        pattern = re.compile(
+            r"""
+            (?P<home>[A-Za-z][^,%]*?)
+            \s+
+            (?P<home_pct>\d+(?:\.\d+)?)%
+            \s*,\s*
+            draw
+            \s+
+            (?P<draw_pct>\d+(?:\.\d+)?)%
+            \s*,\s*
+            (?P<away>[A-Za-z][^,%]*?)
+            \s+
+            (?P<away_pct>\d+(?:\.\d+)?)%
+            """,
+            re.IGNORECASE | re.VERBOSE,
+        )
+
+        match = pattern.search(str(description))
+        if not match:
+            return None
+
+        try:
+            return {
+                "HOME": float(match.group("home_pct")),
+                "DRAW": float(match.group("draw_pct")),
+                "AWAY": float(match.group("away_pct")),
+            }
+        except (TypeError, ValueError):
+            return None
+
+    @staticmethod
+    def _expected90_probability_to_selection(probabilities):
+        if not probabilities:
+            return None
+        return max(probabilities, key=probabilities.get)
+
+    @staticmethod
+    def _expected90_compact_text(value):
+        value = str(value or "").lower()
+        value = value.replace("&", " and ")
+        value = re.sub(r"[^a-z0-9]+", " ", value)
+        return " ".join(value.split())
+
+    def _expected90_extract_match_links(self, html):
+        soup = BeautifulSoup(html, "html.parser")
+        links = []
+        seen = set()
+
+        for anchor in soup.find_all("a", href=True):
+            href = anchor["href"].strip()
+            if not href.startswith("/football-predictions/"):
+                continue
+
+            # Expected90 individual match URLs are:
+            # /football-predictions/<league>/<home>-vs-<away>
+            if not re.search(
+                r"^/football-predictions/[^/]+/[^/]+-vs-[^/]+/?$",
+                href,
+                flags=re.IGNORECASE,
+            ):
+                continue
+
+            url = f"{self.EXPECTED90_BASE_URL}{href}"
+            if url in seen:
+                continue
+
+            seen.add(url)
+            links.append(url)
+
+        return links
+
+    def _expected90_candidate_score(self, url):
+        compact_url = self._expected90_compact_text(url)
+        score = 0
+
+        for match_key in self.master_matrix.keys():
+            parts = [p.strip() for p in match_key.split(" vs ", 1)]
+            if len(parts) != 2:
+                continue
+
+            home = self._expected90_compact_text(parts[0])
+            away = self._expected90_compact_text(parts[1])
+
+            if home and home in compact_url:
+                score += 2
+            if away and away in compact_url:
+                score += 2
+            if home and away and home in compact_url and away in compact_url:
+                score += 5
+
+        return score
+
+    def fetch_expected90_sync(self):
+        """Fetch Expected90's daily match pages and feed 1X2 into consensus."""
+        try:
+            hub_html = self._fetch_expected90_html(
+                self.EXPECTED90_PREDICTIONS_URL
+            )
+
+            all_links = self._expected90_extract_match_links(hub_html)
+
+            if not all_links:
+                self.diagnostics["Expected90_Detail"] = (
+                    "📊 Discovered: 0 | Candidates: 0 | Today predictions: 0 | "
+                    "Matched existing fixtures: 0 | New/unmatched fixtures: 0 | "
+                    "Skipped: 0 | Failed: 0"
+                )
+                self.diagnostics["Expected90"] = (
+                    "🟡 NO MATCH LINKS FOUND"
+                )
+                return
+
+            scored_links = []
+            for url in all_links:
+                score = self._expected90_candidate_score(url)
+                if score > 0:
+                    scored_links.append((score, url))
+
+            if scored_links:
+                scored_links.sort(key=lambda item: (-item[0], item[1]))
+                candidates = [
+                    url for _, url in scored_links[:self.EXPECTED90_MAX_MATCH_PAGES]
+                ]
+            else:
+                # Safe fallback when the base five sources don't provide
+                # candidate fixtures that Expected90 can match.
+                candidates = all_links[:self.EXPECTED90_MAX_MATCH_PAGES]
+
+            eat_tz = datetime.timezone(datetime.timedelta(hours=3))
+            now_utc = datetime.datetime.now(datetime.timezone.utc)
+            today_eat = now_utc.astimezone(eat_tz).date()
+
+            valid_count = 0
+            skipped_count = 0
+            failed_count = 0
+            matched_fixture_count = 0
+            new_fixture_count = 0
+
+            for link in candidates:
+                try:
+                    html = self._fetch_expected90_html(
+                        link,
+                        referer=self.EXPECTED90_PREDICTIONS_URL,
+                    )
+
+                    objects = self._expected90_parse_json_ld(html)
+                    sports_event = self._expected90_find_sports_event(objects)
+
+                    if sports_event is None:
+                        failed_count += 1
+                        continue
+
+                    home_data = sports_event.get("homeTeam")
+                    away_data = sports_event.get("awayTeam")
+
+                    if not isinstance(home_data, dict) or not isinstance(away_data, dict):
+                        failed_count += 1
+                        continue
+
+                    home = str(home_data.get("name") or "").strip()
+                    away = str(away_data.get("name") or "").strip()
+                    kickoff = self._expected90_parse_kickoff(
+                        sports_event.get("startDate")
+                    )
+
+                    if not home or not away or kickoff is None:
+                        failed_count += 1
+                        continue
+
+                    kickoff_eat = kickoff.astimezone(eat_tz)
+
+                    if kickoff_eat.date() != today_eat:
+                        skipped_count += 1
+                        continue
+
+                    # Ignore matches that have already started/finished.
+                    if kickoff <= now_utc:
+                        skipped_count += 1
+                        continue
+
+                    description = sports_event.get("description") or ""
+                    probabilities = self._expected90_extract_probabilities(description)
+
+                    if not probabilities:
+                        skipped_count += 1
+                        continue
+
+                    prediction = self._expected90_probability_to_selection(
+                        probabilities
+                    )
+
+                    if prediction is None:
+                        skipped_count += 1
+                        continue
+
+                    log_result = self.log_prediction_qa(
+                        "Expected90",
+                        home,
+                        away,
+                        prediction,
+                    )
+
+                    if log_result is None:
+                        failed_count += 1
+                        continue
+
+                    if log_result["matched_existing_fixture"]:
+                        matched_fixture_count += 1
+                    else:
+                        new_fixture_count += 1
+
+                    valid_count += 1
+
+                except Exception as exc:
+                    failed_count += 1
+                    print(
+                        f"Expected90: failed to process {link}: {exc}"
+                    )
+
+            self.diagnostics["Expected90_Detail"] = (
+                f"📊 Discovered: {len(all_links)} | "
+                f"Candidates: {len(candidates)} | "
+                f"Today predictions: {valid_count} | "
+                f"Matched existing fixtures: {matched_fixture_count} | "
+                f"New/unmatched fixtures: {new_fixture_count} | "
+                f"Skipped: {skipped_count} | "
+                f"Failed: {failed_count}"
+            )
+
+            if valid_count > 0:
+                self.diagnostics["Expected90"] = (
+                    f"🟢 OK ({valid_count} Today | "
+                    f"{matched_fixture_count} Matched | "
+                    f"{new_fixture_count} New | "
+                    f"{skipped_count} Skipped | "
+                    f"{failed_count} Failed)"
+                )
+            elif failed_count > 0:
+                self.diagnostics["Expected90"] = (
+                    f"🔴 FAILED ({failed_count} page requests failed)"
+                )
+            else:
+                self.diagnostics["Expected90"] = (
+                    f"🟡 NO USABLE PREDICTIONS ({skipped_count} Skipped)"
+                )
+
+        except Exception as exc:
+            self.diagnostics["Expected90"] = f"🔴 FAILED ({exc})"
+
     def fetch_and_scrape_sync(self, site_name, cfg):
         if site_name == "Golsinyali":
             self.fetch_golsinyali_sync()
+            return
+
+        if site_name == "Expected90":
+            self.fetch_expected90_sync()
             return
 
         max_attempts = 3
@@ -887,6 +1257,7 @@ class ConsensusEngine:
 
         all_scrapers = [
             "Golsinyali",
+            "Expected90",
             "Statarea",
             "Vitibet",
             "PredictZ",
@@ -1229,7 +1600,7 @@ class ConsensusEngine:
                         c,
                     )
                     for n, c in self.configs.items()
-                    if n != "Golsinyali"
+                    if n not in {"Golsinyali", "Expected90"}
                 ]
                 base_tasks.append(
                     loop.run_in_executor(
@@ -1239,13 +1610,22 @@ class ConsensusEngine:
                 )
                 await asyncio.gather(*base_tasks)
 
-                # Phase 2: run Golsinyali after the base fixture matrix exists.
+                # Phase 2: run special source adapters after the base
+                # fixture matrix exists so they can target existing fixtures.
                 if "Golsinyali" in self.configs:
                     await loop.run_in_executor(
                         pool,
                         self.fetch_and_scrape_sync,
                         "Golsinyali",
                         self.configs["Golsinyali"],
+                    )
+
+                if "Expected90" in self.configs:
+                    await loop.run_in_executor(
+                        pool,
+                        self.fetch_and_scrape_sync,
+                        "Expected90",
+                        self.configs["Expected90"],
                     )
 
             agreed_matches, structured_tickets, ai_input_data, req_threshold = self.process_consensus_signals()
