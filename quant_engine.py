@@ -86,6 +86,10 @@ class ConsensusEngine:
         self.corner_stats = {} 
         self.diagnostics = {}
 
+        # Dedicated browser-like session for Golsinyali.
+        # This reduces false blocks from basic Python HTTP fingerprints.
+        self.golsinyali_session = tls_requests.Session(impersonate="chrome124")
+
     def normalize_prediction(self, raw_text):
         text = str(raw_text).strip().lower()
         if text in ["home", "home win"]: return "1"
@@ -187,8 +191,8 @@ class ConsensusEngine:
     GOLSINYALI_BASE_URL = "https://www.golsinyali.com"
     GOLSINYALI_PREDICTIONS_URL = f"{GOLSINYALI_BASE_URL}/en/predictions"
     GOLSINYALI_REQUEST_TIMEOUT = 30
-    GOLSINYALI_MAX_MATCH_PAGES = 40
-    GOLSINYALI_REQUEST_DELAY_SECONDS = 1.0
+    GOLSINYALI_MAX_MATCH_PAGES = 20
+    GOLSINYALI_REQUEST_DELAY_SECONDS = 2.0
     GOLSINYALI_MAX_RETRIES = 2
     GOLSINYALI_MAX_RETRY_WAIT_SECONDS = 15.0
     GOLSINYALI_USER_AGENT = (
@@ -291,11 +295,20 @@ class ConsensusEngine:
 
         lowered = str(description).lower()
 
+        # Common descriptive forms used by Golsinyali.
         if "home win" in lowered:
             return "HOME"
         if "away win" in lowered:
             return "AWAY"
         if "draw" in lowered:
+            return "DRAW"
+
+        # Current/alternate 1X2 labels used on prediction cards.
+        if re.search(r"\bms1\b|\bpick\s*:\s*1\b", lowered):
+            return "HOME"
+        if re.search(r"\bms2\b|\bpick\s*:\s*2\b", lowered):
+            return "AWAY"
+        if re.search(r"\bmsx\b|\bpick\s*:\s*x\b", lowered):
             return "DRAW"
 
         marker = lowered.find("balanced match")
@@ -346,26 +359,40 @@ class ConsensusEngine:
 
         return None
 
-    def _fetch_golsinyali_html(self, url):
+    def _fetch_golsinyali_html(self, url, referer=None):
         headers = {
             "User-Agent": self.GOLSINYALI_USER_AGENT,
             "Accept": (
                 "text/html,application/xhtml+xml,application/xml;"
-                "q=0.9,*/*;q=0.8"
+                "q=0.9,image/avif,image/webp,*/*;q=0.8"
             ),
             "Accept-Language": "en-US,en;q=0.9",
+            "Cache-Control": "no-cache",
+            "Pragma": "no-cache",
+            "Upgrade-Insecure-Requests": "1",
+            "Sec-Fetch-Dest": "document",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "same-origin" if referer else "none",
+            "Sec-Fetch-User": "?1",
             "Connection": "keep-alive",
         }
+        if referer:
+            headers["Referer"] = referer
 
         last_error = None
+        last_status = None
+        last_body_hint = None
 
         for attempt in range(1, self.GOLSINYALI_MAX_RETRIES + 1):
             try:
-                response = requests.get(
+                # First try curl_cffi with a real Chrome TLS fingerprint.
+                response = self.golsinyali_session.get(
                     url,
                     headers=headers,
                     timeout=self.GOLSINYALI_REQUEST_TIMEOUT,
                 )
+                last_status = response.status_code
+                last_body_hint = response.text[:160].replace("\n", " ")
 
                 if response.status_code == 429:
                     retry_after = response.headers.get("Retry-After")
@@ -382,35 +409,61 @@ class ConsensusEngine:
                         max(0.0, wait_seconds),
                         self.GOLSINYALI_MAX_RETRY_WAIT_SECONDS,
                     )
-
+                    last_error = f"HTTP 429 (rate limited)"
                     self.diagnostics["Golsinyali_RateLimit"] = (
-                        f"🟡 HTTP 429; waiting {wait_seconds:.1f}s"
+                        f"🟡 HTTP 429; retry {attempt}/{self.GOLSINYALI_MAX_RETRIES}; "
+                        f"waiting {wait_seconds:.1f}s"
                     )
+
+                    # If ScraperAPI is configured, use it immediately as the fallback.
+                    if SCRAPER_API_KEY:
+                        proxy_url = (
+                            "http://api.scraperapi.com"
+                            f"?api_key={SCRAPER_API_KEY}"
+                            f"&url={url}"
+                            "&render=true"
+                        )
+                        proxy_response = requests.get(
+                            proxy_url,
+                            headers=headers,
+                            timeout=60,
+                        )
+                        if proxy_response.status_code == 200 and proxy_response.text.strip():
+                            self.diagnostics["Golsinyali_RateLimit"] = (
+                                "🟢 ScraperAPI fallback succeeded"
+                            )
+                            return proxy_response.text
+                        last_error = (
+                            f"HTTP 429; ScraperAPI fallback returned "
+                            f"HTTP {proxy_response.status_code}"
+                        )
 
                     if attempt < self.GOLSINYALI_MAX_RETRIES and wait_seconds > 0:
                         time.sleep(wait_seconds)
                     continue
 
+                if response.status_code in (403, 408, 425, 500, 502, 503, 504):
+                    last_error = f"HTTP {response.status_code}"
+                    if attempt < self.GOLSINYALI_MAX_RETRIES:
+                        time.sleep(
+                            min(
+                                self.GOLSINYALI_REQUEST_DELAY_SECONDS * attempt,
+                                self.GOLSINYALI_MAX_RETRY_WAIT_SECONDS,
+                            )
+                        )
+                        continue
+                    break
+
                 response.raise_for_status()
                 html = response.text
-
                 if not html.strip():
-                    raise RuntimeError("Empty response")
+                    last_error = "Empty response"
+                    continue
 
                 return html
 
-            except requests.RequestException as exc:
-                last_error = exc
-                if attempt < self.GOLSINYALI_MAX_RETRIES:
-                    wait_seconds = min(
-                        self.GOLSINYALI_REQUEST_DELAY_SECONDS * attempt,
-                        self.GOLSINYALI_MAX_RETRY_WAIT_SECONDS,
-                    )
-                    if wait_seconds > 0:
-                        time.sleep(wait_seconds)
-
             except Exception as exc:
-                last_error = exc
+                last_error = f"{type(exc).__name__}: {exc}"
                 if attempt < self.GOLSINYALI_MAX_RETRIES:
                     time.sleep(
                         min(
@@ -419,9 +472,40 @@ class ConsensusEngine:
                         )
                     )
 
-        raise RuntimeError(
-            f"Golsinyali request failed for {url}: {last_error}"
+        detail = last_error or (f"HTTP {last_status}" if last_status else "Unknown error")
+        if last_body_hint and "http 429" not in detail.lower():
+            detail = f"{detail}; body={last_body_hint!r}"
+        raise RuntimeError(f"Golsinyali request failed for {url}: {detail}")
+
+    @staticmethod
+    def _golsinyali_compact_text(value):
+        value = str(value or "").lower()
+        value = value.replace("&", " and ")
+        value = re.sub(r"[^a-z0-9]+", " ", value)
+        return " ".join(value.split())
+
+    def _golsinyali_candidate_score(self, anchor_text, url):
+        combined = self._golsinyali_compact_text(
+            f"{anchor_text} {url}"
         )
+        if not combined:
+            return 0
+
+        score = 0
+        for match_key in self.master_matrix.keys():
+            parts = [p.strip() for p in match_key.split(" vs ", 1)]
+            if len(parts) != 2:
+                continue
+            home = self._golsinyali_compact_text(parts[0])
+            away = self._golsinyali_compact_text(parts[1])
+            if home and home in combined:
+                score += 2
+            if away and away in combined:
+                score += 2
+            if home and away and home in combined and away in combined:
+                score += 5
+
+        return score
 
     def fetch_golsinyali_sync(self):
         """Fetch Golsinyali match pages and add normalized predictions to consensus."""
@@ -431,7 +515,7 @@ class ConsensusEngine:
             )
 
             soup = BeautifulSoup(predictions_html, "html.parser")
-            links = []
+            anchor_data = []
             seen = set()
 
             for anchor in soup.find_all("a", href=True):
@@ -444,15 +528,31 @@ class ConsensusEngine:
                     continue
 
                 seen.add(url)
-                links.append(url)
+                anchor_data.append((url, anchor.get_text(" ", strip=True)))
 
-            if not links:
+            if not anchor_data:
                 self.diagnostics["Golsinyali"] = (
                     "🟡 BLOCKED (No match links found)"
                 )
                 return
 
-            links = links[: self.GOLSINYALI_MAX_MATCH_PAGES]
+            # Prefer links that correspond to fixtures already discovered by the
+            # original five sources. This mirrors the friend's DOMINION adapter
+            # and dramatically reduces unnecessary match-page requests/rate limits.
+            scored = []
+            for url, anchor_text in anchor_data:
+                score = self._golsinyali_candidate_score(anchor_text, url)
+                if score > 0:
+                    scored.append((score, url, anchor_text))
+
+            if scored:
+                scored.sort(key=lambda item: (-item[0], item[1]))
+                candidates = [(url, anchor_text) for _, url, anchor_text in scored]
+            else:
+                # Safe fallback when the other sources produced no fixtures.
+                candidates = anchor_data
+
+            candidates = candidates[: self.GOLSINYALI_MAX_MATCH_PAGES]
 
             eat_tz = datetime.timezone(datetime.timedelta(hours=3))
             today_eat = (
@@ -465,12 +565,15 @@ class ConsensusEngine:
             skipped_count = 0
             failed_count = 0
 
-            for link in links:
+            for link, _anchor_text in candidates:
                 try:
                     if self.GOLSINYALI_REQUEST_DELAY_SECONDS > 0:
                         time.sleep(self.GOLSINYALI_REQUEST_DELAY_SECONDS)
 
-                    match_html = self._fetch_golsinyali_html(link)
+                    match_html = self._fetch_golsinyali_html(
+                        link,
+                        referer=self.GOLSINYALI_PREDICTIONS_URL,
+                    )
                     sports_event = self._golsinyali_extract_sports_event_jsonld(
                         match_html
                     )
@@ -525,15 +628,20 @@ class ConsensusEngine:
                         f"Golsinyali: failed to process {link}: {exc}"
                     )
 
-            if valid_count > 0 or skipped_count > 0:
+            if valid_count > 0:
                 self.diagnostics["Golsinyali"] = (
                     f"🟢 OK ({valid_count} Today | "
                     f"{skipped_count} Skipped | "
                     f"{failed_count} Failed)"
                 )
+            elif failed_count > 0 and skipped_count == 0:
+                self.diagnostics["Golsinyali"] = (
+                    f"🔴 FAILED ({failed_count} page requests failed)"
+                )
             else:
                 self.diagnostics["Golsinyali"] = (
-                    "🟡 BLOCKED (No usable predictions found)"
+                    f"🟡 NO USABLE PREDICTIONS ({skipped_count} Skipped | "
+                    f"{failed_count} Failed)"
                 )
 
         except Exception as exc:
@@ -1044,6 +1152,21 @@ class ConsensusEngine:
             if today_payload.get("locked"):
                 is_already_locked = True
 
+        if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
+            self.diagnostics["Telegram"] = "🟡 NOT CONFIGURED (Secrets missing)"
+        else:
+            self.diagnostics["Telegram"] = "🟢 CONFIGURED"
+
+        if SCRAPER_API_KEY:
+            self.diagnostics["ScraperAPI"] = "🟢 CONFIGURED"
+        else:
+            self.diagnostics["ScraperAPI"] = "🟡 NOT CONFIGURED (Direct requests only)"
+
+        if GEMINI_API_KEY:
+            self.diagnostics["Gemini"] = "🟢 CONFIGURED"
+        else:
+            self.diagnostics["Gemini"] = "🟡 NOT CONFIGURED"
+
         if is_already_locked:
             print(f"🔒 Data for {today_date} is already securely locked. Bypassing scrapers to conserve ScraperAPI tokens.")
             daily_data = memory[today_date]
@@ -1055,9 +1178,34 @@ class ConsensusEngine:
             print(f"🔓 Scraping and generating fresh tickets for {today_date}...")
             loop = asyncio.get_running_loop()
             with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:
-                tasks = [loop.run_in_executor(pool, self.fetch_and_scrape_sync, n, c) for n, c in self.configs.items()]
-                tasks.append(loop.run_in_executor(pool, self.fetch_corners_sync))
-                await asyncio.gather(*tasks)
+                # Phase 1: run the original sources first so they establish
+                # the canonical fixtures that Golsinyali can target.
+                base_tasks = [
+                    loop.run_in_executor(
+                        pool,
+                        self.fetch_and_scrape_sync,
+                        n,
+                        c,
+                    )
+                    for n, c in self.configs.items()
+                    if n != "Golsinyali"
+                ]
+                base_tasks.append(
+                    loop.run_in_executor(
+                        pool,
+                        self.fetch_corners_sync,
+                    )
+                )
+                await asyncio.gather(*base_tasks)
+
+                # Phase 2: run Golsinyali after the base fixture matrix exists.
+                if "Golsinyali" in self.configs:
+                    await loop.run_in_executor(
+                        pool,
+                        self.fetch_and_scrape_sync,
+                        "Golsinyali",
+                        self.configs["Golsinyali"],
+                    )
 
             agreed_matches, structured_tickets, ai_input_data, req_threshold = self.process_consensus_signals()
 
