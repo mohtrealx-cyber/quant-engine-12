@@ -1,119 +1,21 @@
 {
     "2026-09-19": {
-        "locked": false,
+        "locked": true,
         "agreed_matches": [
-            "\u2022 **Sevilla vs Barcelona** \u2794 2\n  \u21b3 \u2705 Backed by: `PredictZ + WinDrawWin + Vitibet`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
-            "\u2022 **Cadiz vs Girona** \u2794 2\n  \u21b3 \u2705 Backed by: `PredictZ + WinDrawWin + Vitibet`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
-            "\u2022 **Lommel Sk vs Kv Mechelen** \u2794 1\n  \u21b3 \u2705 Backed by: `PredictZ + WinDrawWin + Vitibet`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
-            "\u2022 **Ka vs Thor Akureyri** \u2794 1\n  \u21b3 \u2705 Backed by: `PredictZ + Statarea + Vitibet`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26a0\ufe0f WinDrawWin backed: X\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
-            "\u2022 **Sporting Lisbon vs Arouca** \u2794 1\n  \u21b3 \u2705 Backed by: `PredictZ + WinDrawWin + Statarea + Vitibet`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
-            "\u2022 **Atletico Rafaela vs San Martin De Tucuman** \u2794 X\n  \u21b3 \u2705 Backed by: `PredictZ + WinDrawWin + Vitibet`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
-            "\u2022 **Temperley vs Almagro** \u2794 1\n  \u21b3 \u2705 Backed by: `PredictZ + WinDrawWin + Vitibet + Golsinyali`\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
-            "\u2022 **Atletico Mineiro vs Chapecoense** \u2794 1\n  \u21b3 \u2705 Backed by: `PredictZ + WinDrawWin + Vitibet + Golsinyali`\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
-            "\u2022 **Mirassol vs Botafogo** \u2794 1\n  \u21b3 \u2705 Backed by: `PredictZ + WinDrawWin + Vitibet + Golsinyali`\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
-            "\u2022 **Athletic Club vs Botafogo Sp** \u2794 1\n  \u21b3 \u2705 Backed by: `PredictZ + WinDrawWin + Vitibet`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
-            "\u2022 **Millonarios vs Chico Fc** \u2794 1\n  \u21b3 \u2705 Backed by: `PredictZ + WinDrawWin + Vitibet`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
-            "\u2022 **Libertad vs Sportivo Ameliano** \u2794 1\n  \u21b3 \u2705 Backed by: `PredictZ + WinDrawWin + Statarea`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Vitibet: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
-            "\u2022 **Cerro Porteno vs Rubio Nu** \u2794 1\n  \u21b3 \u2705 Backed by: `PredictZ + WinDrawWin + Statarea`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Vitibet: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
-            "\u2022 **Sporting Cristal vs Atletico Grau** \u2794 1\n  \u21b3 \u2705 Backed by: `PredictZ + WinDrawWin + Vitibet`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
-            "\u2022 **Deportivo Maldonado vs Cerro Largo** \u2794 1\n  \u21b3 \u2705 Backed by: `PredictZ + WinDrawWin + Vitibet`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
-            "\u2022 **Cavalry vs Forge** \u2794 1\n  \u21b3 \u2705 Backed by: `PredictZ + WinDrawWin + Vitibet`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n"
+            "\u2022 **Sporting Cp vs Arouca** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + SoccerVista + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n",
+            "\u2022 **Ka Akureyri vs Thor Akureyri** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n"
         ],
-        "ai_optimized_message": null,
+        "ai_optimized_message": "\ud83d\udee1\ufe0f Ticket 1: Ironclad (40% of Daily Stake)\n\u2022 Sporting Cp vs Arouca \u2794 Sporting CP to Win\n\u2022 Ka Akureyri vs Thor Akureyri \u2794 Ka Akureyri to Win (Draw No Bet)\n\u2022 Angers vs Estac Troyes \u2794 Over 8.5 Corners\n\ud83d\udd04 [RESERVE PICK]: Deportivo Saprissa vs Cs Herediano \u2794 Over 8.5 Corners\n\n\u2696\ufe0f Ticket 2: Balanced (20% of Daily Stake)\n\u2022 Fc Dallas vs Austin Fc \u2794 Over 8.5 Corners\n\u2022 Maring\u00e1 vs Botafogo Pb \u2794 Over 8.5 Corners\n\ud83d\udd04 [RESERVE PICK]: Athletic Club Mg vs Botafogo-Sp \u2794 Over 8.5 Corners\n\n\ud83c\udfaf Ticket 3: Volatility (10% of Daily Stake)\n\u2022 Debreceni Vsc vs Vasas \u2794 Over 9.5 Corners\n\u2022 Salernitana vs Giugliano \u2794 Over 9.5 Corners\n\u2022 Remo vs Santos \u2794 Over 9.5 Corners\n\ud83d\udd04 [RESERVE PICK]: Sport Recife vs Juventude \u2794 Over 9.5 Corners\n\n\ud83e\uddea Ticket 4: Custom Tickets (30% of Daily Stake)",
         "req_threshold": 3,
         "tickets": [
             {
-                "match": "Sevilla vs Barcelona",
-                "prediction": "2",
-                "status": "PENDING",
-                "score": "-"
-            },
-            {
-                "match": "Cadiz vs Girona",
-                "prediction": "2",
-                "status": "PENDING",
-                "score": "-"
-            },
-            {
-                "match": "Lommel Sk vs Kv Mechelen",
+                "match": "Sporting Cp vs Arouca",
                 "prediction": "1",
                 "status": "PENDING",
                 "score": "-"
             },
             {
-                "match": "Ka vs Thor Akureyri",
-                "prediction": "1",
-                "status": "PENDING",
-                "score": "-"
-            },
-            {
-                "match": "Sporting Lisbon vs Arouca",
-                "prediction": "1",
-                "status": "PENDING",
-                "score": "-"
-            },
-            {
-                "match": "Atletico Rafaela vs San Martin De Tucuman",
-                "prediction": "X",
-                "status": "PENDING",
-                "score": "-"
-            },
-            {
-                "match": "Temperley vs Almagro",
-                "prediction": "1",
-                "status": "PENDING",
-                "score": "-"
-            },
-            {
-                "match": "Atletico Mineiro vs Chapecoense",
-                "prediction": "1",
-                "status": "PENDING",
-                "score": "-"
-            },
-            {
-                "match": "Mirassol vs Botafogo",
-                "prediction": "1",
-                "status": "PENDING",
-                "score": "-"
-            },
-            {
-                "match": "Athletic Club vs Botafogo Sp",
-                "prediction": "1",
-                "status": "PENDING",
-                "score": "-"
-            },
-            {
-                "match": "Millonarios vs Chico Fc",
-                "prediction": "1",
-                "status": "PENDING",
-                "score": "-"
-            },
-            {
-                "match": "Libertad vs Sportivo Ameliano",
-                "prediction": "1",
-                "status": "PENDING",
-                "score": "-"
-            },
-            {
-                "match": "Cerro Porteno vs Rubio Nu",
-                "prediction": "1",
-                "status": "PENDING",
-                "score": "-"
-            },
-            {
-                "match": "Sporting Cristal vs Atletico Grau",
-                "prediction": "1",
-                "status": "PENDING",
-                "score": "-"
-            },
-            {
-                "match": "Deportivo Maldonado vs Cerro Largo",
-                "prediction": "1",
-                "status": "PENDING",
-                "score": "-"
-            },
-            {
-                "match": "Cavalry vs Forge",
+                "match": "Ka Akureyri vs Thor Akureyri",
                 "prediction": "1",
                 "status": "PENDING",
                 "score": "-"
