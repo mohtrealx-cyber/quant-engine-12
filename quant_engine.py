@@ -118,24 +118,41 @@ class ConsensusEngine:
         return False
 
     def log_prediction_qa(self, site_name, home, away, raw_prediction):
-        if not home or not away or not raw_prediction: return
+        if not home or not away or not raw_prediction:
+            return None
+
         normalized_pick = self.normalize_prediction(raw_prediction)
-        if not normalized_pick: return
+        if not normalized_pick:
+            return None
 
         raw_match_key = f"{self.clean_team_name(home)} vs {self.clean_team_name(away)}"
         final_key = raw_match_key
+        matched_existing_fixture = False
 
         for existing_key in self.master_matrix.keys():
-            similarity = difflib.SequenceMatcher(None, raw_match_key.lower(), existing_key.lower()).ratio()
-            if similarity >= 0.75: 
+            similarity = difflib.SequenceMatcher(
+                None,
+                raw_match_key.lower(),
+                existing_key.lower(),
+            ).ratio()
+            if similarity >= 0.75:
                 final_key = existing_key
+                matched_existing_fixture = True
                 break
 
-        if final_key not in self.master_matrix: self.master_matrix[final_key] = []
+        if final_key not in self.master_matrix:
+            self.master_matrix[final_key] = []
 
         existing_sites = [entry[0] for entry in self.master_matrix[final_key]]
         if site_name not in existing_sites:
             self.master_matrix[final_key].append((site_name, normalized_pick))
+
+        return {
+            "match_key": final_key,
+            "matched_existing_fixture": matched_existing_fixture,
+            "created_new_match": not matched_existing_fixture,
+            "normalized_pick": normalized_pick,
+        }
 
     def fetch_corners_sync(self):
         url = "https://www.totalcorner.com/match/today"
@@ -564,6 +581,8 @@ class ConsensusEngine:
             valid_count = 0
             skipped_count = 0
             failed_count = 0
+            matched_fixture_count = 0
+            new_fixture_count = 0
 
             for link, _anchor_text in candidates:
                 try:
@@ -614,12 +633,22 @@ class ConsensusEngine:
                         skipped_count += 1
                         continue
 
-                    self.log_prediction_qa(
+                    log_result = self.log_prediction_qa(
                         "Golsinyali",
                         metadata["home_team"],
                         metadata["away_team"],
                         prediction,
                     )
+
+                    if log_result is None:
+                        failed_count += 1
+                        continue
+
+                    if log_result["matched_existing_fixture"]:
+                        matched_fixture_count += 1
+                    else:
+                        new_fixture_count += 1
+
                     valid_count += 1
 
                 except Exception as exc:
@@ -628,9 +657,21 @@ class ConsensusEngine:
                         f"Golsinyali: failed to process {link}: {exc}"
                     )
 
+            self.diagnostics["Golsinyali_Detail"] = (
+                f"📊 Discovered: {len(anchor_data)} | "
+                f"Candidates: {len(candidates)} | "
+                f"Today predictions: {valid_count} | "
+                f"Matched existing fixtures: {matched_fixture_count} | "
+                f"New/unmatched fixtures: {new_fixture_count} | "
+                f"Skipped: {skipped_count} | "
+                f"Failed: {failed_count}"
+            )
+
             if valid_count > 0:
                 self.diagnostics["Golsinyali"] = (
                     f"🟢 OK ({valid_count} Today | "
+                    f"{matched_fixture_count} Matched | "
+                    f"{new_fixture_count} New | "
                     f"{skipped_count} Skipped | "
                     f"{failed_count} Failed)"
                 )
@@ -1255,7 +1296,9 @@ class ConsensusEngine:
         print(f"MASTER MATRIX MATCHES: {len(self.master_matrix)}")
         if self.master_matrix:
             for match, listings in self.master_matrix.items():
-                sources = ", ".join(site for site, _pick in listings)
+                sources = ", ".join(
+                    f"{site}={pick}" for site, pick in listings
+                )
                 print(f"• {match} -> {sources}")
         else:
             print("No matches entered the consensus matrix.")
