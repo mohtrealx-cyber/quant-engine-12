@@ -1118,7 +1118,7 @@ class ConsensusEngine:
 
     def send_telegram_alert(self, msg):
         if not (TELEGRAM_TOKEN and TELEGRAM_CHAT_ID):
-            print("Telegram credentials missing.")
+            print("Telegram credentials missing; Telegram notification skipped.")
             return
 
         url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
@@ -1241,6 +1241,25 @@ class ConsensusEngine:
                 self.diagnostics["Daily_Lock"] = f"⏳ PREVIEW (Will Lock At 05:00 EAT) / AI RETRY PENDING"
 
         settled_reports = self.settle_pending_tickets(memory)
+
+        # Always print diagnostics to GitHub Actions logs. This is important when
+        # Telegram secrets are not configured yet, because otherwise scraper
+        # status would only be visible through Telegram.
+        print("\n==========================================")
+        print("SCRAPER / ENGINE DIAGNOSTICS")
+        print("==========================================")
+        for site, status in self.diagnostics.items():
+            print(f"↳ {site}: {status}")
+
+        print("\n==========================================")
+        print(f"MASTER MATRIX MATCHES: {len(self.master_matrix)}")
+        if self.master_matrix:
+            for match, listings in self.master_matrix.items():
+                sources = ", ".join(site for site, _pick in listings)
+                print(f"• {match} -> {sources}")
+        else:
+            print("No matches entered the consensus matrix.")
+        print("==========================================\n")
 
         # Only send the Telegram alert if we actually scraped fresh data OR if we settled a ticket.
         # This prevents spamming your phone with exact duplicate tickets in the afternoon.
