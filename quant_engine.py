@@ -8,7 +8,6 @@ import difflib
 import requests
 from bs4 import BeautifulSoup
 import concurrent.futures
-from zoneinfo import ZoneInfo
 from curl_cffi import requests as tls_requests
 
 # ==============================================================================
@@ -43,10 +42,10 @@ def get_dynamic_configs():
             "fallback_url": None,
             "use_scraperapi": False
         },
-        "Betiball": {
-            "url": "https://www.betiball.com/football-predictions/",
-            "fallback_url": "https://www.betiball.com/",
-            "use_scraperapi": True
+        "NVtips": {
+            "url": f"https://nvtips.com/?d={datetime.datetime.utcnow().day}&m={datetime.datetime.utcnow().month}&y={datetime.datetime.utcnow().year}",
+            "fallback_url": None,
+            "use_scraperapi": False
         },
         "Statarea": {
             "url": f"https://www.statarea.com/predictions/date/{today_date}/",
@@ -1327,380 +1326,258 @@ class ConsensusEngine:
             self.diagnostics["SoccerAiTips"] = f"🔴 FAILED ({exc})"
             self.diagnostics["SoccerAiTips_Detail"] = "No secondary-market data collected."
 
-    # ==========================================================================
-    # BETIBALL DEDICATED ADAPTER
-    # ==========================================================================
+    # ======================================================================
+    # NVTIPS DEDICATED ADAPTER
+    # ======================================================================
 
-    BETIBALL_BASE_URL = "https://www.betiball.com"
-    BETIBALL_DISCOVERY_URL = f"{BETIBALL_BASE_URL}/football-predictions/"
-    BETIBALL_SOURCE_TIMEZONE = ZoneInfo("Africa/Nairobi")
-    BETIBALL_REQUEST_TIMEOUT = 30
-    BETIBALL_MAX_CANDIDATE_LINKS = 60
-    BETIBALL_MAX_MATCH_PAGES = 25
-    BETIBALL_LEAGUE_URLS = (
-        "https://www.betiball.com/football-predictions/english-premier-league/1x2",
-        "https://www.betiball.com/football-predictions/spanish-la-liga/1x2",
-        "https://www.betiball.com/football-predictions/german-bundesliga/1x2",
-        "https://www.betiball.com/football-predictions/italian-serie-a/1x2",
-        "https://www.betiball.com/football-predictions/france-ligue-1/1x2",
+    NVTIPS_BASE_URL = "https://nvtips.com"
+    NVTIPS_REQUEST_TIMEOUT = 30
+    NVTIPS_USER_AGENT = (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/140.0.0.0 Safari/537.36"
     )
 
-    @staticmethod
-    def _betiball_slugify_team(value):
-        value = str(value or "").strip().lower()
-        value = value.replace("&", " and ")
-        value = value.replace("'", "").replace("’", "")
-        value = re.sub(r"[^a-z0-9]+", "-", value)
-        return value.strip("-")
-
-    @staticmethod
-    def _betiball_page_text(html):
-        soup = BeautifulSoup(html, "html.parser")
-        return soup.get_text(" ", strip=True)
-
     @classmethod
-    def _betiball_extract_fixture_names(cls, text):
-        # Betiball's current match-page heading is:
-        #   "Home vs Away - Prediction & Odds"
-        # Older pages/tests may omit "- & Odds" or use the compact
-        # "Home - Away 1 X 2" form, so support both variants.
-        patterns = [
-            re.compile(
-                r"(?P<home>[A-Za-z0-9][A-Za-z0-9 .&'’()/-]*?)\s+vs\s+"
-                r"(?P<away>[A-Za-z0-9][A-Za-z0-9 .&'’()/-]*?)\s*-\s*"
-                r"Prediction(?:\s*&\s*Odds)?\b",
-                re.IGNORECASE,
-            ),
-            re.compile(
-                r"(?P<home>[A-Za-z0-9][A-Za-z0-9 .&'’()/-]*?)\s+vs\s+"
-                r"(?P<away>[A-Za-z0-9][A-Za-z0-9 .&'’()/-]*?)\s+Prediction\b",
-                re.IGNORECASE,
-            ),
-            re.compile(
-                r"(?P<home>[A-Za-z0-9][A-Za-z0-9 .&'’()/-]*?)\s+-\s+"
-                r"(?P<away>[A-Za-z0-9][A-Za-z0-9 .&'’()/-]*?)\s+1\s+X\s+2",
-                re.IGNORECASE,
-            ),
-        ]
-
-        for pattern in patterns:
-            match = pattern.search(text or "")
-            if not match:
-                continue
-
-            home = " ".join(match.group("home").split()).strip(" -")
-            away = " ".join(match.group("away").split()).strip(" -")
-
-            if home and away:
-                home = re.sub(
-                    r"(?i)\b(match preview|preview|results?)\b",
-                    "",
-                    home,
-                )
-                away = re.sub(
-                    r"(?i)\b(match preview|preview|results?)\b",
-                    "",
-                    away,
-                )
-                home = re.sub(r"\s+", " ", home).strip().title()
-                away = re.sub(r"\s+", " ", away).strip().title()
-                return home, away
-
-        return None
-
-    @classmethod
-    def _betiball_extract_scheduled_date(cls, text):
-        match = re.search(r"\b(\d{4})-(\d{2})-(\d{2})\b", text or "")
-        if not match:
-            return None
-        try:
-            return datetime.date(
-                int(match.group(1)),
-                int(match.group(2)),
-                int(match.group(3)),
-            )
-        except ValueError:
-            return None
-
-    @classmethod
-    def _betiball_target_date(cls):
-        return datetime.datetime.now(datetime.timezone.utc).astimezone(
-            cls.BETIBALL_SOURCE_TIMEZONE
-        ).date()
-
-    @classmethod
-    def _betiball_extract_probabilities(cls, text, home_team, away_team):
-        escaped_home = re.escape(home_team)
-        escaped_away = re.escape(away_team)
-
-        prediction_pattern = re.compile(
-            rf"Our\s+algorithm\s+prediction:\s*{escaped_home}"
-            rf"\s+(?:to\s+win\s+)?with\s+probability\s+"
-            rf"(?P<home>\d+(?:\.\d+)?)%",
-            re.IGNORECASE,
+    def _nvtips_build_url(cls, target_date):
+        return (
+            f"{cls.NVTIPS_BASE_URL}/"
+            f"?d={target_date.day}&m={target_date.month}&y={target_date.year}"
         )
-        prediction_match = prediction_pattern.search(text or "")
-        if not prediction_match:
-            return None
-
-        home_probability = float(prediction_match.group("home"))
-
-        block_pattern = re.compile(
-            rf"{escaped_home}\s*-\s*{escaped_away}"
-            rf".*?(?P<home_pct>\d+(?:\.\d+)?)\s+"
-            rf"(?P<draw_pct>\d+(?:\.\d+)?)\s+"
-            rf"(?P<away_pct>\d+(?:\.\d+)?)\s+\d{{1,2}}",
-            re.IGNORECASE | re.DOTALL,
-        )
-        block_match = block_pattern.search(text or "")
-        if not block_match:
-            return None
-
-        return {
-            "HOME": home_probability,
-            "DRAW": float(block_match.group("draw_pct")),
-            "AWAY": float(block_match.group("away_pct")),
-        }
-
-    @staticmethod
-    def _betiball_probability_to_selection(probabilities):
-        if not probabilities:
-            return None
-        return max(probabilities, key=probabilities.get)
 
     @classmethod
-    def _betiball_fetch_html(cls, url):
+    def _fetch_nvtips_html(cls, target_date):
+        url = cls._nvtips_build_url(target_date)
         headers = {
-            "User-Agent": (
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/140.0 Safari/537.36"
+            "User-Agent": cls.NVTIPS_USER_AGENT,
+            "Accept": (
+                "text/html,application/xhtml+xml,application/xml;"
+                "q=0.9,*/*;q=0.8"
             ),
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
             "Accept-Language": "en-US,en;q=0.9",
+            "Cache-Control": "no-cache",
         }
 
-        direct_error = None
         try:
             response = requests.get(
                 url,
                 headers=headers,
-                timeout=cls.BETIBALL_REQUEST_TIMEOUT,
+                timeout=cls.NVTIPS_REQUEST_TIMEOUT,
             )
-            if response.status_code == 200 and response.text.strip():
-                return response.text
-            direct_error = f"HTTP {response.status_code}"
         except requests.RequestException as exc:
-            direct_error = str(exc)
+            raise RuntimeError(f"NVtips request failed: {exc}") from exc
 
-        if SCRAPER_API_KEY:
-            try:
-                response = requests.get(
-                    "https://api.scraperapi.com/",
-                    params={
-                        "api_key": SCRAPER_API_KEY,
-                        "url": url,
-                        "render": "true",
-                        "premium": "true",
-                        "country_code": "us",
-                    },
-                    headers=headers,
-                    timeout=60,
-                )
-                if response.status_code == 200 and response.text.strip():
-                    return response.text
-                raise RuntimeError(f"HTTP {response.status_code}")
-            except Exception as exc:
-                raise RuntimeError(
-                    f"Betiball request failed; direct={direct_error}; scraperapi={exc}"
-                ) from exc
-
-        raise RuntimeError(f"Betiball request failed: {direct_error}")
-
-    @classmethod
-    def _betiball_find_candidates(cls, html, target_matches):
-        soup = BeautifulSoup(html, "html.parser")
-        anchor_data = []
-        seen = set()
-        for anchor in soup.find_all("a", href=True):
-            href = anchor.get("href", "").strip()
-            if not href or "football-predictions/" not in href:
-                continue
-            if href.startswith("/"):
-                href = f"{cls.BETIBALL_BASE_URL}{href}"
-            if href in seen:
-                continue
-            seen.add(href)
-            anchor_data.append((href, anchor.get_text(" ", strip=True)))
-
-        candidate_map = {}
-        for match_key in target_matches:
-            try:
-                home, away = [part.strip() for part in match_key.split(" vs ", 1)]
-            except ValueError:
-                candidate_map[match_key] = []
-                continue
-            hslug = cls._betiball_slugify_team(home)
-            aslug = cls._betiball_slugify_team(away)
-            candidates = []
-            for href, anchor_text in anchor_data:
-                low = f"{anchor_text} {href}".lower()
-                score = 0
-                if f"{hslug}-vs-{aslug}-" in low or f"{hslug}-vs-{aslug}" in low:
-                    score += 5
-                if f"{aslug}-vs-{hslug}-" in low:
-                    continue
-                if hslug in low:
-                    score += 2
-                if aslug in low:
-                    score += 2
-                if score >= 4:
-                    candidates.append((score, href))
-            candidates.sort(key=lambda item: (-item[0], item[1]))
-            candidate_map[match_key] = [
-                href for _, href in candidates[:cls.BETIBALL_MAX_CANDIDATE_LINKS]
-            ]
-        return candidate_map
-
-    @classmethod
-    def _betiball_parse_match(cls, html, target_match):
-        text = cls._betiball_page_text(html)
-
-        names = cls._betiball_extract_fixture_names(text)
-        if not names:
-            return None, "fixture_names"
-
-        home, away = names
-        try:
-            target_home, target_away = [
-                part.strip() for part in target_match.split(" vs ", 1)
-            ]
-        except ValueError:
-            return None, "target_fixture"
-
-        if cls._betiball_slugify_team(home) != cls._betiball_slugify_team(target_home):
-            return None, "home_mismatch"
-
-        if cls._betiball_slugify_team(away) != cls._betiball_slugify_team(target_away):
-            return None, "away_mismatch"
-
-        source_date = cls._betiball_extract_scheduled_date(text)
-        if source_date and source_date != cls._betiball_target_date():
-            return None, "date_mismatch"
-
-        probs = cls._betiball_extract_probabilities(text, home, away)
-        if not probs:
-            return None, "probabilities"
-
-        selection = cls._betiball_probability_to_selection(probs)
-        if not selection:
-            return None, "selection"
-
-        return (selection, probs), "ok"
-
-    def fetch_betiball_sync(self):
-        discovered = 0
-        candidates = 0
-        matched = 0
-        new_count = 0
-        skipped = 0
-        failed = 0
-
-        try:
-            target_matches = list(self.master_matrix.keys())
-            if not target_matches:
-                self.diagnostics["Betiball"] = "🟡 NO TARGET FIXTURES"
-                self.diagnostics["Betiball_Detail"] = "No canonical fixtures available."
-                return
-
-            discovery_pages = [self.BETIBALL_DISCOVERY_URL, *self.BETIBALL_LEAGUE_URLS]
-            discovery_htmls = []
-            for discovery_url in discovery_pages:
+        if response.status_code != 200:
+            # Optional proxy fallback using the repository's existing
+            # ScraperAPI credential. Direct requests remain the primary path.
+            if SCRAPER_API_KEY:
                 try:
-                    html = self._betiball_fetch_html(discovery_url)
-                    discovery_htmls.append(html)
-                except Exception as exc:
-                    print(f"Betiball: discovery page failed {discovery_url}: {exc}")
-
-            if not discovery_htmls:
-                raise RuntimeError("All Betiball discovery pages failed.")
-
-            all_candidates = []
-            seen_pairs = set()
-            per_fixture_candidates = {match_key: [] for match_key in target_matches}
-
-            for html in discovery_htmls:
-                candidate_map = self._betiball_find_candidates(html, target_matches)
-                for match_key, match_links in candidate_map.items():
-                    for link in match_links:
-                        pair = (match_key, link)
-                        if pair in seen_pairs:
-                            continue
-                        seen_pairs.add(pair)
-                        per_fixture_candidates[match_key].append(link)
-                        all_candidates.append(pair)
-
-            discovered = len(seen_pairs)
-            candidates = min(len(all_candidates), self.BETIBALL_MAX_MATCH_PAGES)
-
-            reject_reasons = {}
-
-            for match_key, link in all_candidates[:self.BETIBALL_MAX_MATCH_PAGES]:
-                try:
-                    html = self._betiball_fetch_html(link)
-                    parsed, reason = self._betiball_parse_match(html, match_key)
-                    if not parsed:
-                        skipped += 1
-                        reject_reasons[reason] = reject_reasons.get(reason, 0) + 1
-                        continue
-
-                    selection, _probabilities = parsed
-                    home, away = [part.strip() for part in match_key.split(" vs ", 1)]
-                    info = self.log_prediction_qa(
-                        "Betiball", home, away, selection
+                    proxy_url = "https://api.scraperapi.com/"
+                    proxy_response = requests.get(
+                        proxy_url,
+                        params={
+                            "api_key": SCRAPER_API_KEY,
+                            "url": url,
+                            "premium": "true",
+                            "country_code": "us",
+                        },
+                        headers=headers,
+                        timeout=60,
                     )
-                    if not info:
-                        skipped += 1
-                        reject_reasons["matrix_rejected"] = reject_reasons.get("matrix_rejected", 0) + 1
-                        continue
+                    if proxy_response.status_code == 200 and proxy_response.text.strip():
+                        return proxy_response.text
+                except requests.RequestException:
+                    pass
 
-                    if info["matched_existing_fixture"]:
-                        matched += 1
-                    else:
-                        new_count += 1
-                except Exception as exc:
-                    failed += 1
-                    print(f"Betiball: failed to process {link}: {exc}")
-
-            reason_text = ", ".join(
-                f"{key}={value}"
-                for key, value in sorted(reject_reasons.items())
-            ) or "none"
-
-            self.diagnostics["Betiball_Detail"] = (
-                f"📊 Candidate matches: {len(all_candidates)} | "
-                f"Pages selected: {candidates} | Predictions: {matched + new_count} | "
-                f"Matched existing fixtures: {matched} | New/unmatched fixtures: {new_count} | "
-                f"Skipped: {skipped} | Failed: {failed} | "
-                f"Reject reasons: {reason_text}"
+            raise RuntimeError(
+                f"NVtips returned HTTP {response.status_code}"
             )
 
-            total_valid = matched + new_count
-            if total_valid > 0:
-                self.diagnostics["Betiball"] = (
-                    f"🟢 OK ({total_valid} Predictions | {matched} Matched | "
-                    f"{new_count} New | {skipped} Skipped | {failed} Failed)"
+        html = response.text
+        if not html.strip():
+            raise RuntimeError("NVtips returned an empty response.")
+
+        if "NVtips" not in html:
+            raise RuntimeError("NVtips branding was not found in the response.")
+
+        return html
+
+    @staticmethod
+    def _nvtips_clean_text(value):
+        return re.sub(r"\s+", " ", value or "").strip()
+
+    @classmethod
+    def _nvtips_extract_team_names(cls, row):
+        team_nodes = row.select(".nv-team-name")
+        teams = [
+            cls._nvtips_clean_text(node.get_text(" ", strip=True))
+            for node in team_nodes
+        ]
+        teams = [team for team in teams if team]
+        if len(teams) < 2:
+            return None
+        return teams[0], teams[1]
+
+    @staticmethod
+    def _nvtips_extract_probabilities(row_text):
+        values = re.findall(r"\b(\d{1,3}(?:\.\d+)?)%", row_text)
+        if len(values) < 3:
+            return None
+        try:
+            probabilities = tuple(float(value) for value in values[:3])
+        except ValueError:
+            return None
+        if any(value < 0.0 or value > 100.0 for value in probabilities):
+            return None
+        return probabilities
+
+    @classmethod
+    def _nvtips_extract_prediction(cls, row):
+        data_search = cls._nvtips_clean_text(row.get("data-search", "")).lower()
+        score_prediction = re.search(
+            r"\b([1x2])\s+(\d+)\s*-\s*(\d+)\b",
+            data_search,
+            re.IGNORECASE,
+        )
+        if score_prediction:
+            return score_prediction.group(1).upper()
+
+        row_text = cls._nvtips_clean_text(row.get_text(" ", strip=True))
+        visible_match = re.search(
+            r"\b([1x2])\b\s+\d+\s*-\s*\d+\b",
+            row_text,
+            re.IGNORECASE,
+        )
+        if visible_match:
+            return visible_match.group(1).upper()
+
+        return None
+
+    @classmethod
+    def _nvtips_extract_rows(cls, html):
+        soup = BeautifulSoup(html, "html.parser")
+        rows = soup.select("div.nv-row")
+        extracted = []
+
+        for row in rows:
+            teams = cls._nvtips_extract_team_names(row)
+            if teams is None:
+                continue
+
+            home_team, away_team = teams
+            row_text = cls._nvtips_clean_text(
+                row.get_text(" ", strip=True)
+            )
+            probabilities = cls._nvtips_extract_probabilities(row_text)
+            if probabilities is None:
+                continue
+
+            prediction = cls._nvtips_extract_prediction(row)
+            if prediction is None:
+                continue
+
+            extracted.append(
+                {
+                    "home_team": home_team,
+                    "away_team": away_team,
+                    "competition": cls._nvtips_clean_text(
+                        row.get("data-league", "")
+                    ),
+                    "country": cls._nvtips_clean_text(
+                        row.get("data-country", "")
+                    ),
+                    "source_time": cls._nvtips_clean_text(
+                        row.get("data-time", "")
+                    ),
+                    "probabilities": probabilities,
+                    "prediction": prediction,
+                }
+            )
+
+        return extracted
+
+    def fetch_nvtips_sync(self):
+        """Fetch today's NVtips rows and feed 1X2 predictions into consensus."""
+        try:
+            eat_tz = datetime.timezone(datetime.timedelta(hours=3))
+            today_eat = datetime.datetime.now(datetime.timezone.utc).astimezone(eat_tz).date()
+            html = self._fetch_nvtips_html(today_eat)
+            rows = self._nvtips_extract_rows(html)
+
+            valid_count = 0
+            matched_fixture_count = 0
+            new_fixture_count = 0
+            skipped_count = 0
+            failed_count = 0
+
+            for row in rows:
+                try:
+                    home = row["home_team"]
+                    away = row["away_team"]
+                    prediction = row["prediction"]
+
+                    if not home or not away or prediction not in {"1", "X", "2"}:
+                        skipped_count += 1
+                        continue
+
+                    # NVtips' daily page is date-scoped, so its displayed time
+                    # is used only for discovery. The canonical engine fixture
+                    # remains authoritative for kickoff.
+                    log_result = self.log_prediction_qa(
+                        "NVtips",
+                        home,
+                        away,
+                        prediction,
+                    )
+
+                    if log_result is None:
+                        failed_count += 1
+                        continue
+
+                    if log_result["matched_existing_fixture"]:
+                        matched_fixture_count += 1
+                    else:
+                        new_fixture_count += 1
+
+                    valid_count += 1
+
+                except Exception as exc:
+                    failed_count += 1
+                    print(
+                        f"NVtips: failed to process "
+                        f"{row.get('home_team')} vs {row.get('away_team')}: {exc}"
+                    )
+
+            self.diagnostics["NVtips_Detail"] = (
+                f"📊 Discovered: {len(rows)} | "
+                f"Today predictions: {valid_count} | "
+                f"Matched existing fixtures: {matched_fixture_count} | "
+                f"New/unmatched fixtures: {new_fixture_count} | "
+                f"Skipped: {skipped_count} | "
+                f"Failed: {failed_count}"
+            )
+
+            if valid_count > 0:
+                self.diagnostics["NVtips"] = (
+                    f"🟢 OK ({valid_count} Today | "
+                    f"{matched_fixture_count} Matched | "
+                    f"{new_fixture_count} New | "
+                    f"{skipped_count} Skipped | "
+                    f"{failed_count} Failed)"
                 )
-            elif failed > 0:
-                self.diagnostics["Betiball"] = f"🔴 FAILED ({failed} candidate errors)"
+            elif failed_count > 0:
+                self.diagnostics["NVtips"] = (
+                    f"🔴 FAILED ({failed_count} row processing failures)"
+                )
             else:
-                self.diagnostics["Betiball"] = (
-                    f"🟡 NO USABLE PREDICTIONS ({skipped} Skipped)"
+                self.diagnostics["NVtips"] = (
+                    f"🟡 NO USABLE PREDICTIONS ({len(rows)} Rows)"
                 )
+
         except Exception as exc:
-            self.diagnostics["Betiball"] = f"🔴 FAILED ({exc})"
-            self.diagnostics["Betiball_Detail"] = (
-                f"Discovery failed: {type(exc).__name__}: {exc}"
+            self.diagnostics["NVtips"] = f"🔴 FAILED ({exc})"
+            self.diagnostics["NVtips_Detail"] = (
+                f"📊 Discovery failed: {type(exc).__name__}: {exc}"
             )
 
     def fetch_and_scrape_sync(self, site_name, cfg):
@@ -1716,8 +1593,8 @@ class ConsensusEngine:
             self.fetch_socceraitips_sync()
             return
 
-        if site_name == "Betiball":
-            self.fetch_betiball_sync()
+        if site_name == "NVtips":
+            self.fetch_nvtips_sync()
             return
 
         max_attempts = 3
@@ -1915,12 +1792,12 @@ class ConsensusEngine:
         all_scrapers = [
             "Golsinyali",
             "Expected90",
-            "Betiball",
             "Statarea",
             "Vitibet",
             "PredictZ",
             "WinDrawWin",
             "SoccerVista",
+            "NVtips",
         ]
         
         required_consensus = 3 
@@ -2266,7 +2143,7 @@ class ConsensusEngine:
                         c,
                     )
                     for n, c in self.configs.items()
-                    if n not in {"Golsinyali", "Expected90", "Betiball"}
+                    if n not in {"Golsinyali", "Expected90", "NVtips"}
                 ]
                 base_tasks.append(
                     loop.run_in_executor(
@@ -2302,12 +2179,12 @@ class ConsensusEngine:
                         self.configs["SoccerAiTips"],
                     )
 
-                if "Betiball" in self.configs:
+                if "NVtips" in self.configs:
                     await loop.run_in_executor(
                         pool,
                         self.fetch_and_scrape_sync,
-                        "Betiball",
-                        self.configs["Betiball"],
+                        "NVtips",
+                        self.configs["NVtips"],
                     )
 
             agreed_matches, structured_tickets, ai_input_data, req_threshold = self.process_consensus_signals()
