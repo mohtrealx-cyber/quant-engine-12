@@ -1785,9 +1785,21 @@ class ConsensusEngine:
         self.diagnostics[site_name] = f"🔴 FAILED (HTTP {last_status if last_status else 'TIMEOUT'})"
 
     def process_consensus_signals(self):
-        agreed_matches = []
+        """
+        Build two consensus tiers:
+
+        * CORE: at least 4 independent 1X2 sources agree.
+        * RESEARCH FALLBACK: exactly 3 sources agree.
+
+        The 3+ tier is not promoted automatically. It is only exposed to
+        Gemini when the 4+ pool contains fewer than four usable matches,
+        because four tickets must still be generated.
+        """
+        core_matches = []
+        fallback_matches = []
         structured_tickets = []
-        ai_input_data = []
+        core_ai_input_data = []
+        fallback_ai_input_data = []
 
         all_scrapers = [
             "Golsinyali",
@@ -1799,58 +1811,124 @@ class ConsensusEngine:
             "SoccerVista",
             "NVtips",
         ]
-        
-        required_consensus = 3 
 
-        for match, listings in self.master_matrix.items():
+        required_consensus = 4
+        fallback_consensus = 3
+        min_core_matches_for_full_ticket_pool = 4
+
+        def build_match_record(match, listings, top_pick, tier_label):
             prediction_weights = {}
             sites_backing = {}
             for site, pick in listings:
                 prediction_weights[pick] = prediction_weights.get(pick, 0) + 1
-                if pick not in sites_backing: sites_backing[pick] = []
-                sites_backing[pick].append(site)
+                sites_backing.setdefault(pick, []).append(site)
+
+            backing_sites_list = sites_backing[top_pick]
+            backing_sites_str = " + ".join(backing_sites_list)
+            contradictions = []
+
+            match_text = (
+                f"• **{match}** ➔ {top_pick}\n"
+                f"  ↳ ✅ Backed by: `{backing_sites_str}`\n"
+            )
+
+            left_out_sites = [
+                site for site in all_scrapers
+                if site not in backing_sites_list
+            ]
+
+            for left_out in left_out_sites:
+                other_pick = None
+                for pick, sites in sites_backing.items():
+                    if pick != top_pick and left_out in sites:
+                        other_pick = pick
+                        break
+
+                if other_pick:
+                    match_text += (
+                        f"  ↳ ⚠️ {left_out} backed: {other_pick}\n"
+                    )
+                    contradictions.append(
+                        f"{left_out} ({other_pick})"
+                    )
+                else:
+                    match_text += (
+                        f"  ↳ ⚪ {left_out}: Not Listed\n"
+                    )
+
+            ai_record = {
+                "match": match,
+                "consensus_pick": top_pick,
+                "agreement_count": len(backing_sites_list),
+                "backed_by": backing_sites_str,
+                "contradictions": contradictions,
+                "tier": tier_label,
+            }
+
+            return match_text, ai_record
+
+        for match, listings in self.master_matrix.items():
+            if not listings:
+                continue
+
+            prediction_weights = {}
+            sites_backing = {}
+
+            for site, pick in listings:
+                prediction_weights[pick] = prediction_weights.get(pick, 0) + 1
+                sites_backing.setdefault(pick, []).append(site)
 
             if not prediction_weights:
                 continue
 
             top_pick = max(prediction_weights, key=prediction_weights.get)
-            
-            if prediction_weights[top_pick] >= required_consensus:
-                backing_sites_list = sites_backing[top_pick]
-                backing_sites_str = " + ".join(backing_sites_list)
-                contradictions = []
+            top_count = prediction_weights[top_pick]
 
-                match_text = (
-                    f"• **{match}** ➔ {top_pick}\n"
-                    f"  ↳ ✅ Backed by: `{backing_sites_str}`\n"
+            if top_count >= required_consensus:
+                match_text, ai_record = build_match_record(
+                    match, listings, top_pick, "Core Consensus (4+)"
                 )
-
-                left_out_sites = [s for s in all_scrapers if s not in backing_sites_list]
-                for left_out in left_out_sites:
-                    other_pick = None
-                    for pick, sites in sites_backing.items():
-                        if pick != top_pick and left_out in sites:
-                            other_pick = pick
-                            break
-                    
-                    if other_pick: 
-                        match_text += f"  ↳ ⚠️ {left_out} backed: {other_pick}\n"
-                        contradictions.append(f"{left_out} ({other_pick})")
-                    else: 
-                        match_text += f"  ↳ ⚪ {left_out}: Not Listed\n"
-
-                agreed_matches.append(match_text)
-                structured_tickets.append({"match": match, "prediction": top_pick, "status": "PENDING", "score": "-"})
-                
-                ai_input_data.append({
-                    "match": match, 
-                    "consensus_pick": top_pick, 
-                    "backed_by": backing_sites_str, 
-                    "contradictions": contradictions, 
-                    "tier": "Core Consensus"
+                core_matches.append(match_text)
+                core_ai_input_data.append(ai_record)
+                structured_tickets.append({
+                    "match": match,
+                    "prediction": top_pick,
+                    "status": "PENDING",
+                    "score": "-",
                 })
 
-        return agreed_matches, structured_tickets, ai_input_data, required_consensus
+            elif top_count >= fallback_consensus:
+                match_text, ai_record = build_match_record(
+                    match, listings, top_pick, "Research Candidate (3+)"
+                )
+                fallback_matches.append(match_text)
+                fallback_ai_input_data.append(ai_record)
+
+        fallback_active = len(core_ai_input_data) < min_core_matches_for_full_ticket_pool
+
+        self.diagnostics["Core_4Plus"] = (
+            f"🟢 {len(core_ai_input_data)} qualified matches"
+        )
+        self.diagnostics["Fallback_3Plus"] = (
+            f"{'🟡 ACTIVE' if fallback_active else '⚪ STANDBY'} "
+            f"({len(fallback_ai_input_data)} research candidates)"
+        )
+        self.diagnostics["Consensus_Mode"] = (
+            "🔬 DEEP RESEARCH FALLBACK (3+)"
+            if fallback_active
+            else "🛡️ STRICT CORE ONLY (4+)"
+        )
+
+        return (
+            core_matches,
+            fallback_matches,
+            structured_tickets,
+            core_ai_input_data,
+            fallback_ai_input_data,
+            required_consensus,
+            fallback_consensus,
+            fallback_active,
+        )
 
     def get_available_gemini_models(self, api_key):
         list_url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}"
@@ -1876,7 +1954,13 @@ class ConsensusEngine:
             pass
         return ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-flash-latest"]
 
-    def ask_llm_to_optimize_tickets(self, ai_input_data, active_corner_teams, secondary_market_data=None):
+    def ask_llm_to_optimize_tickets(
+        self,
+        core_ai_input_data,
+        fallback_ai_input_data,
+        active_corner_teams,
+        secondary_market_data=None,
+    ):
         api_key = (GEMINI_API_KEY or "").strip()
         if not api_key:
             self.diagnostics["AI_Status"] = "🔴 Missing GEMINI_API_KEY"
@@ -1885,13 +1969,19 @@ class ConsensusEngine:
         models_to_try = self.get_available_gemini_models(api_key)
         secondary_market_data = secondary_market_data or []
 
+        fallback_active = len(core_ai_input_data) < 4
+        research_pool = list(fallback_ai_input_data) if fallback_active else []
+
         prompt = f"""
         You are Titan, an elite quantitative sports betting AI Portfolio Manager.
-        Your objective is to analyze the following raw consensus data and corner statistics, 
-        and construct highly optimized, risk-mitigated betting tickets.
+        Your job is to construct four complete, non-blank daily tickets from the
+        evidence supplied below.
 
-        === RAW CONSENSUS DATA ===
-        {json.dumps(ai_input_data, indent=2)}
+        === PRIMARY CONSENSUS POOL: 4+ SOURCES ===
+        {json.dumps(core_ai_input_data, indent=2)}
+
+        === FALLBACK RESEARCH POOL: EXACTLY 3 SOURCES ===
+        {json.dumps(research_pool, indent=2)}
 
         === HIGH-PROBABILITY CORNER STATISTICS ===
         {json.dumps(active_corner_teams, indent=2)}
@@ -1899,53 +1989,56 @@ class ConsensusEngine:
         === SECONDARY MARKET SIGNALS (SOCCERAITIPS) ===
         {json.dumps(secondary_market_data, indent=2)}
 
-        NOTE: SoccerAiTips currently supplies BTTS / Over 2.5 markets, not
-        canonical 1X2 picks. Do NOT count these signals as 1X2 consensus votes.
-        They may be used as supporting secondary-market evidence when relevant.
+        IMPORTANT SOURCE RULES:
+        1. A PRIMARY candidate requires 4 or more independent 1X2 sources agreeing
+           on the same result.
+        2. A FALLBACK candidate has exactly 3 agreeing sources and may only be used
+           when the primary pool contains fewer than four usable matches.
+        3. FALLBACK MODE is currently: {"ACTIVE" if fallback_active else "INACTIVE"}.
+        4. When FALLBACK MODE is INACTIVE, do NOT select any 3+ candidate.
+        5. When FALLBACK MODE is ACTIVE, perform a deeper comparative analysis of
+           the 3+ candidates before selecting them. Prioritize stronger agreement,
+           fewer contradictions, fixture consistency, and supporting corner or
+           secondary-market evidence when available.
+        6. Never invent a consensus source, prediction, fixture, probability, or
+           statistic that is not present in the supplied data.
+        7. SoccerAiTips BTTS/Over 2.5 signals are secondary evidence only; they are
+           never counted as 1X2 consensus votes.
 
-        STRICT ARCHITECTURE RULES:
-        1. NEVER repeat the same match across multiple tickets or reserve slots. Every match used (whether main or reserve) must be completely unique across your entire output.
-        2. ACT AS A PORTFOLIO MANAGER: You are allowed to DROP weak consensus matches and REPLACE them with Corner predictions (e.g., 'Over 8.5 Corners') in Tickets 1, 2, or 3 if the corner data provides a mathematically safer floor.
-        3. YOU MUST FORMAT YOUR HEADERS EXACTLY LIKE THIS to enforce my daily dynamic staking strategy:
-            🛡️ Ticket 1: Ironclad (40% of Daily Stake)
-            ⚖️ Ticket 2: Balanced (20% of Daily Stake)
-            🎯 Ticket 3: Volatility (10% of Daily Stake)
-            🧪 Ticket 4: Custom Tickets (30% of Daily Stake)
-        4. TICKET BUILDING LOGIC:
-            - TICKET 1: MUST contain EXACTLY THREE main matches sourced exclusively from the 'Core Consensus' tier with ZERO contradictions. If fewer than 3 pristine matches exist, fill remaining spots with safest Corner predictions.
-            - TICKET 2: Mix any remaining 'Core Consensus' matches with Corners. Matches with contradictions can be placed here.
-            - TICKET 3: Use the remaining matches and higher-risk options.
-            - TICKET 4: Leave this ticket COMPLETELY BLANK under the header. Do not generate any matches for it.
-        5. CRITICAL RESERVE/BACKUP RULE:
-            - At the end of Tickets 1, 2, and 3 ONLY, append EXACTLY ONE additional backup match tagged as follows:
-              `🔄 [RESERVE PICK]: [Match Name] ➔ [Optimized Prediction]`
-            - Ticket 4 gets NO matches and NO reserve pick.
-        6. IF there are only 1 or 2 matches available for the day: Output a single ticket using this exact header:
-            🔥 Ticket 1: Premium Singles (100% of Daily Stake)
-            • [Match Name] ➔ [Optimized Prediction]
-            🔄 [RESERVE PICK]: [Match Name] ➔ [Optimized Prediction]
-        7. Apply your advanced risk-mitigation optimizations DIRECTLY on the slip lines.
-        8. NO paragraphs of text. NO explanations. Output ONLY the beautifully formatted tickets ready to be sent via Telegram.
+        TICKET ALLOCATION:
+        - 🛡️ Ticket 1: 30% of Daily Stake
+        - ⚖️ Ticket 2: 30% of Daily Stake
+        - 🎯 Ticket 3: 30% of Daily Stake
+        - 🧪 Ticket 4: 10% of Daily Stake
 
-        OUTPUT FORMAT TEMPLATE:
-        🛡️ Ticket 1: Ironclad (40% of Daily Stake)
-        • [Match Name] ➔ [Prediction]
-        • [Match Name] ➔ [Prediction]
-        • [Match Name] ➔ [Prediction]
-        🔄 [RESERVE PICK]: [Match Name] ➔ [Prediction]
+        CRITICAL TICKET RULES:
+        8. ALL FOUR tickets MUST be generated. No ticket may be blank.
+        9. Every ticket must contain at least ONE concrete selection.
+        10. Prefer different matches across tickets. Do not repeat a match unless
+            the available unique candidate pool is too small to populate four
+            non-blank tickets.
+        11. Do not force extra selections merely to make a ticket look full.
+        12. When there are enough unique candidates, distribute them across the
+            four tickets according to risk, with Ticket 4 generally the leanest.
+        13. A corner selection may be used only when the supplied corner statistics
+            support it.
+        14. Apply risk mitigation directly on the ticket lines.
+        15. Output ONLY the four formatted tickets. No explanations, no analysis
+            paragraphs, and no blank ticket.
 
-        ⚖️ Ticket 2: Balanced (20% of Daily Stake)
-        • [Match Name] ➔ [Prediction]
-        • [Match Name] ➔ [Prediction]
-        🔄 [RESERVE PICK]: [Match Name] ➔ [Prediction]
+        EXACT OUTPUT FORMAT:
 
-        🎯 Ticket 3: Volatility (10% of Daily Stake)
+        🛡️ Ticket 1: Ironclad (30% of Daily Stake)
         • [Match Name] ➔ [Prediction]
-        • [Match Name] ➔ [Prediction]
-        • [Match Name] ➔ [Prediction]
-        🔄 [RESERVE PICK]: [Match Name] ➔ [Prediction]
 
-        🧪 Ticket 4: Custom Tickets (30% of Daily Stake)
+        ⚖️ Ticket 2: Balanced (30% of Daily Stake)
+        • [Match Name] ➔ [Prediction]
+
+        🎯 Ticket 3: Volatility (30% of Daily Stake)
+        • [Match Name] ➔ [Prediction]
+
+        🧪 Ticket 4: Custom Tickets (10% of Daily Stake)
+        • [Match Name] ➔ [Prediction]
         """
 
         payload = {"contents": [{"parts": [{"text": prompt}]}]}
@@ -1958,9 +2051,31 @@ class ConsensusEngine:
                     response = requests.post(url, json=payload, timeout=40)
                     if response.status_code == 200:
                         data = response.json()
-                        self.diagnostics["AI_Handshake"] = f"🟢 Connected ({model_name})"
-                        self.diagnostics["AI_Status"] = "🟢 Optimization Complete"
-                        return data['candidates'][0]['content']['parts'][0]['text']
+                        candidate_text = (
+                            data.get("candidates", [{}])[0]
+                            .get("content", {})
+                            .get("parts", [{}])[0]
+                            .get("text", "")
+                        )
+
+                        valid_output, validation_reason = self._validate_ticket_output(
+                            candidate_text
+                        )
+
+                        if valid_output:
+                            self.diagnostics["AI_Handshake"] = f"🟢 Connected ({model_name})"
+                            self.diagnostics["AI_Status"] = "🟢 Optimization Complete (4 Tickets Validated)"
+                            return candidate_text
+
+                        last_error = (
+                            f"Invalid ticket output ({validation_reason}) "
+                            f"from {model_name}"
+                        )
+                        self.diagnostics["AI_Status"] = (
+                            f"🟡 RETRYING ({validation_reason})"
+                        )
+                        time.sleep(1)
+                        continue
                     
                     try:
                         err_detail = response.json().get("error", {}).get("message", response.text[:100])
@@ -1980,6 +2095,37 @@ class ConsensusEngine:
 
         self.diagnostics["AI_Status"] = f"🔴 {last_error}"
         return None
+
+    @staticmethod
+    def _validate_ticket_output(text):
+        """Ensure Gemini produced all four non-blank ticket sections."""
+        if not isinstance(text, str) or not text.strip():
+            return False, "EMPTY_RESPONSE"
+
+        required_headers = [
+            "🛡️ Ticket 1: Ironclad (30% of Daily Stake)",
+            "⚖️ Ticket 2: Balanced (30% of Daily Stake)",
+            "🎯 Ticket 3: Volatility (30% of Daily Stake)",
+            "🧪 Ticket 4: Custom Tickets (10% of Daily Stake)",
+        ]
+
+        positions = []
+        for header in required_headers:
+            pos = text.find(header)
+            if pos == -1:
+                return False, f"MISSING_HEADER: {header}"
+            positions.append(pos)
+
+        if positions != sorted(positions):
+            return False, "INVALID_HEADER_ORDER"
+
+        for index, start_pos in enumerate(positions):
+            end_pos = positions[index + 1] if index + 1 < len(positions) else len(text)
+            section = text[start_pos:end_pos]
+            if not re.search(r"(?m)^\s*•\s*.+$", section):
+                return False, f"BLANK_TICKET_{index + 1}"
+
+        return True, "OK"
 
     def load_memory(self):
         if os.path.exists(MEMORY_FILE):
@@ -2125,9 +2271,21 @@ class ConsensusEngine:
         if is_already_locked:
             print(f"🔒 Data for {today_date} is already securely locked. Bypassing scrapers to conserve ScraperAPI tokens.")
             daily_data = memory[today_date]
-            agreed_matches = daily_data.get("agreed_matches", [])
+            agreed_matches = daily_data.get("core_matches_4plus") or daily_data.get("agreed_matches", [])
             ai_optimized_message = daily_data.get("ai_optimized_message")
-            req_threshold = daily_data.get("req_threshold", 3)
+            req_threshold = daily_data.get("req_threshold", 4)
+            fallback_active = daily_data.get("fallback_active", False)
+
+            self.diagnostics["Consensus_Mode"] = (
+                "🔬 DEEP RESEARCH FALLBACK (3+)"
+                if fallback_active
+                else "🛡️ STRICT CORE ONLY (4+)"
+            )
+            self.diagnostics["Consensus_Pool"] = (
+                f"Cached | 4+ Core: {len(daily_data.get('core_matches_4plus', []))} | "
+                f"3+ Research: {len(daily_data.get('fallback_matches_3plus', []))} | "
+                f"Fallback Active: {'YES' if fallback_active else 'NO'}"
+            )
             self.diagnostics["Daily_Lock"] = f"🟢 CACHED (Tokens Saved for {today_date})"
         else:
             print(f"🔓 Scraping and generating fresh tickets for {today_date}...")
@@ -2187,7 +2345,24 @@ class ConsensusEngine:
                         self.configs["NVtips"],
                     )
 
-            agreed_matches, structured_tickets, ai_input_data, req_threshold = self.process_consensus_signals()
+            (
+                core_matches,
+                fallback_matches,
+                structured_tickets,
+                core_ai_input_data,
+                fallback_ai_input_data,
+                req_threshold,
+                fallback_threshold,
+                fallback_active,
+            ) = self.process_consensus_signals()
+
+            agreed_matches = core_matches if core_matches else fallback_matches
+
+            self.diagnostics["Consensus_Pool"] = (
+                f"4+ Core: {len(core_ai_input_data)} | "
+                f"3+ Research: {len(fallback_ai_input_data)} | "
+                f"Fallback Active: {'YES' if fallback_active else 'NO'}"
+            )
 
             active_corner_teams = []
             for match in self.master_matrix.keys():
@@ -2200,21 +2375,34 @@ class ConsensusEngine:
                         active_corner_teams.append({"match": match, "team": a, "avg_corners": self.corner_stats[a]})
 
             ai_optimized_message = None
-            if ai_input_data or active_corner_teams or self.secondary_market_data:
+            if core_ai_input_data or fallback_ai_input_data or active_corner_teams or self.secondary_market_data:
                 ai_optimized_message = self.ask_llm_to_optimize_tickets(
-                    ai_input_data,
+                    core_ai_input_data,
+                    fallback_ai_input_data,
                     active_corner_teams,
                     self.secondary_market_data,
                 )
 
-            # Strict Lock Enforced here
-            should_lock = (current_hour >= 5) and (ai_optimized_message is not None or not ai_input_data)
+            # Strict Lock Enforced here. The engine can lock once Gemini has
+            # produced a valid four-ticket output, or when there is no candidate
+            # data at all.
+            should_lock = (
+                current_hour >= 5
+                and (
+                    ai_optimized_message is not None
+                    or (not core_ai_input_data and not fallback_ai_input_data)
+                )
+            )
 
             memory[today_date] = {
                 "locked": should_lock,
                 "agreed_matches": agreed_matches,
+                "core_matches_4plus": core_matches,
+                "fallback_matches_3plus": fallback_matches,
+                "fallback_active": fallback_active,
                 "ai_optimized_message": ai_optimized_message,
                 "req_threshold": req_threshold,
+                "fallback_threshold": fallback_threshold,
                 "tickets": structured_tickets
             }
             self.save_memory(memory)
@@ -2263,12 +2451,28 @@ class ConsensusEngine:
         # Only send the Telegram alert if we actually scraped fresh data OR if we settled a ticket.
         # This prevents spamming your phone with exact duplicate tickets in the afternoon.
         if not is_already_locked or settled_reports:
-            msg = f"🤝 **RAW CONSENSUS DATA ({req_threshold}+ SITES AGREEMENT)** 🤝\n\n"
-            if not agreed_matches:
-                msg += f"No matches found with {req_threshold}+ sites in agreement today.\n\n"
+            if self.diagnostics.get("Consensus_Mode", "").startswith("🔬"):
+                msg = "🤝 **RAW CONSENSUS DATA (4+ SITES AGREEMENT)** 🤝\n\n"
+                if agreed_matches:
+                    for match in agreed_matches:
+                        msg += f"{match}\n"
+                else:
+                    msg += "No matches found with 4+ sites in agreement today.\n\n"
+
+                msg += (
+                    "\n🔬 **GEMINI 3+ FALLBACK ACTIVE** 🔬\n"
+                    "The 4+ pool contains fewer than four usable matches, "
+                    "so Gemini is allowed to analyze the 3+ research pool.\n\n"
+                )
+
             else:
-                for match in agreed_matches: msg += f"{match}\n"
-                    
+                msg = "🤝 **RAW CONSENSUS DATA (4+ SITES AGREEMENT)** 🤝\n\n"
+                if not agreed_matches:
+                    msg += "No matches found with 4+ sites in agreement today.\n\n"
+                else:
+                    for match in agreed_matches:
+                        msg += f"{match}\n"
+
             if settled_reports:
                 msg += "📊 **SETTLED RESULTS (Newly Finalized)** 📊\n\n"
                 for rep in settled_reports: msg += f"{rep}\n"
