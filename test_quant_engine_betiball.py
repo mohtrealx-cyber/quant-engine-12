@@ -2,9 +2,7 @@ from datetime import datetime, timezone
 from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
-from quant_engine_golsinyali_expected90_socceraitips_betiball import (
-    ConsensusEngine,
-)
+from quant_engine import ConsensusEngine
 
 
 EAT = ZoneInfo("Africa/Nairobi")
@@ -13,14 +11,14 @@ TODAY = datetime.now(timezone.utc).astimezone(EAT).date().isoformat()
 DISCOVERY_HTML = """
 <html><body>
 <a href="/football-predictions/leeds-united-vs-newcastle-united-248830036">
-Leeds United vs Newcastle United Prediction
+Leeds United vs Newcastle United - Prediction &amp; Odds
 </a>
 </body></html>
 """
 
 MATCH_HTML = f"""
 <html><body>
-<h1>Leeds United vs Newcastle United Prediction</h1>
+<h1>Leeds United vs Newcastle United - Prediction &amp; Odds</h1>
 <div>Scheduled date: {TODAY}</div>
 <div>Our algorithm prediction: Leeds United to win with probability 41%.</div>
 <div>Leeds United - Newcastle United 41 25 34 12</div>
@@ -56,7 +54,7 @@ def test_betiball_slug_and_probability_parsing():
     )
 
 
-def test_betiball_fixture_and_link_discovery():
+def test_betiball_current_fixture_heading_and_link_discovery():
     names = ConsensusEngine._betiball_extract_fixture_names(
         ConsensusEngine._betiball_page_text(MATCH_HTML)
     )
@@ -75,7 +73,9 @@ def test_betiball_fixture_and_link_discovery():
 
 
 def test_betiball_end_to_end_without_live_requests():
-    engine = ConsensusEngine({"Betiball": {"url": ConsensusEngine.BETIBALL_DISCOVERY_URL}})
+    engine = ConsensusEngine(
+        {"Betiball": {"url": ConsensusEngine.BETIBALL_DISCOVERY_URL}}
+    )
     engine.master_matrix = {
         "Leeds United vs Newcastle United": [],
     }
@@ -90,7 +90,7 @@ def test_betiball_end_to_end_without_live_requests():
         raise AssertionError(f"Unexpected URL: {url}")
 
     with patch(
-        "quant_engine_golsinyali_expected90_socceraitips_betiball.requests.get",
+        "quant_engine.requests.get",
         side_effect=fake_get,
     ):
         engine.fetch_betiball_sync()
@@ -106,6 +106,6 @@ def test_betiball_end_to_end_without_live_requests():
 
 if __name__ == "__main__":
     test_betiball_slug_and_probability_parsing()
-    test_betiball_fixture_and_link_discovery()
+    test_betiball_current_fixture_heading_and_link_discovery()
     test_betiball_end_to_end_without_live_requests()
     print("ALL BETIBALL INTEGRATION TESTS PASSED")
