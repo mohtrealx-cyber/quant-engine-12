@@ -1981,8 +1981,6 @@ class ConsensusEngine:
         research_pool = list(fallback_ai_input_data) if fallback_active else []
 
         # Reserves should come primarily from the exact-3 agreement pool.
-        # Rank the reserve pool by lower contradiction count while keeping the
-        # agreement count explicit for Gemini.
         reserve_pool = sorted(
             fallback_ai_input_data,
             key=lambda item: (
@@ -1994,8 +1992,7 @@ class ConsensusEngine:
 
         prompt = f"""
         You are Titan, an elite quantitative sports betting AI Portfolio Manager.
-        Your job is to construct four complete daily tickets from the evidence
-        supplied below.
+        Construct four complete daily tickets from ONLY the evidence supplied below.
 
         === PRIMARY CONSENSUS POOL: 4+ SOURCES ===
         {json.dumps(core_ai_input_data, indent=2)}
@@ -2012,21 +2009,46 @@ class ConsensusEngine:
         === SECONDARY MARKET SIGNALS (SOCCERAITIPS) ===
         {json.dumps(secondary_market_data, indent=2)}
 
-        SOURCE RULES:
+        SOURCE / EVIDENCE RULES:
         1. A PRIMARY candidate requires 4 or more independent 1X2 sources agreeing
-           on the same result.
-        2. A FALLBACK candidate has exactly 3 agreeing sources.
+           on the same result, unless FALLBACK MODE is active.
+        2. A FALLBACK candidate has exactly 3 agreeing 1X2 sources.
         3. FALLBACK MODE is currently: {"ACTIVE" if fallback_active else "INACTIVE"}.
-        4. When FALLBACK MODE is INACTIVE, main-ticket selections MUST come from
-           the 4+ primary pool only.
-        5. When FALLBACK MODE is ACTIVE, you may use the 3+ research pool for main
-           selections only as needed to reach the minimum ticket requirements.
-        6. RESERVES should come from the EXACTLY-3 reserve pool above whenever
-           possible, regardless of fallback mode. Do not use an unlisted reserve.
-        7. Never invent a consensus source, prediction, fixture, probability, or
-           statistic that is not present in the supplied data.
-        8. SoccerAiTips BTTS/Over 2.5 signals are secondary evidence only; they
-           never count as 1X2 consensus votes.
+        4. When FALLBACK MODE is INACTIVE, main-ticket selections MUST use matches
+           from the 4+ primary pool.
+        5. When FALLBACK MODE is ACTIVE, the 3+ research pool may be used only as
+           needed to reach the 12-primary minimum across all four tickets.
+        6. RESERVES should come from the EXACTLY-3 reserve pool whenever possible.
+        7. Never invent a source, prediction, fixture, probability, corner statistic,
+           or secondary-market signal.
+        8. SoccerAiTips BTTS / Over 2.5 signals are secondary-market evidence and do
+           NOT count as 1X2 consensus votes.
+        9. Market-specific evidence must match the market selected. Do not treat
+           1X2 agreement as direct evidence for BTTS, goals, or corners.
+        10. Do NOT use Draw No Bet (DNB) anywhere. DNB is completely forbidden.
+
+        ALLOWED MARKET TYPES:
+        - 1X2: 1, X, 2
+        - Double Chance: 1X, X2, 12
+        - Goals: Over N.N Goals / Under N.N Goals, only when supported by evidence
+        - BTTS: BTTS Yes / BTTS No, only when supported by evidence
+        - Corners: Over N.N Corners / Under N.N Corners, only when supported by
+          supplied corner evidence
+
+        MARKET SAFETY RULES:
+        11. Do not use Draw No Bet, DNB, Draw-No-Bet, or equivalent wording.
+        12. Do not create a goal or corner line simply because it looks attractive.
+            Use only a line supported by supplied evidence.
+        13. Do not claim that a source predicted a market it did not provide.
+        14. Double Chance may be used as a lower-variance representation of supported
+            1X2 evidence (for example, strong HOME + draw protection -> 1X), but do
+            not invent probabilities.
+        15. For BTTS and Over 2.5 Goals, prefer explicit SoccerAiTips signals when
+            present for the same fixture.
+        16. For corner markets, use only supplied corner statistics. Do not fabricate
+            a total-corner projection.
+        17. When market-specific evidence is unavailable, use a supported 1X2 or
+            Double Chance market instead of guessing.
 
         TICKET ALLOCATION:
         - 🛡️ Ticket 1: 30% of Daily Stake
@@ -2035,53 +2057,50 @@ class ConsensusEngine:
         - 🧪 Ticket 4: 10% of Daily Stake
 
         CRITICAL TICKET RULES:
-        9. ALL FOUR tickets MUST be generated.
-        10. EVERY ticket MUST contain at least THREE primary selections.
-        11. EVERY ticket MUST contain EXACTLY ONE reserve selection.
-        12. Total minimum = 12 primary selections + 4 reserves.
-        13. Prefer unique primary matches across tickets. Repeat a primary match
-            only when the available eligible pool is too small to reach the minimum.
-        14. Keep each ticket internally unique: its reserve must not duplicate one
-            of that ticket's three primary selections.
-        15. Prefer different reserve matches across tickets. Reuse a reserve only
-            if there are fewer than four suitable 3+ reserve candidates.
-        16. The reserve is NOT part of the ticket's main stake calculation; label it
-            clearly as a reserve.
-        17. RESERVE PRIORITY: choose reserves primarily from the supplied 3+
-            agreement pool, favoring clean agreement records with fewer
-            contradictions. Use a 4+ candidate as a reserve only as an emergency
-            when there are insufficient suitable 3+ candidates.
-        18. Do not force extra primary selections beyond the minimum unless useful
-            for the risk profile and supported by the supplied evidence.
-        19. Apply risk mitigation directly on the ticket lines.
-        20. Output ONLY the four formatted tickets. No explanations and no analysis
-            paragraphs.
+        18. ALL FOUR tickets MUST be generated.
+        19. EVERY ticket MUST contain at least THREE primary selections.
+        20. EVERY ticket MUST contain EXACTLY ONE reserve selection.
+        21. Total minimum = 12 primary selections + 4 reserves.
+        22. Prefer unique primary matches across tickets. Repeat a primary match only
+            when the available eligible pool is too small to reach the minimum.
+        23. Keep each ticket internally unique: its reserve must not duplicate one of
+            that ticket's three primary selections.
+        24. Prefer different reserve matches across tickets. Reuse a reserve only if
+            there are fewer than four suitable 3+ reserve candidates.
+        25. The reserve is NOT part of the ticket's main stake calculation.
+        26. Reserve priority: choose from the supplied 3+ agreement pool first;
+            use a 4+ match as reserve only if there are insufficient 3+ candidates.
+        27. Markets may be mixed across a ticket when evidence supports the market.
+            Do not force every ticket to use the same market.
+        28. Do not force extra primary selections beyond the minimum unless useful
+            for the risk profile and supported by evidence.
+        29. Output ONLY the four formatted tickets. No explanations or analysis.
 
         EXACT OUTPUT FORMAT:
 
         🛡️ Ticket 1: Ironclad (30% of Daily Stake)
-        • [Match Name] ➔ [Prediction]
-        • [Match Name] ➔ [Prediction]
-        • [Match Name] ➔ [Prediction]
-        ↳ Reserve: [Match Name] ➔ [Prediction]
+        • [Match Name] ➔ [Allowed Market]
+        • [Match Name] ➔ [Allowed Market]
+        • [Match Name] ➔ [Allowed Market]
+        ↳ Reserve: [Match Name] ➔ [Allowed Market]
 
         ⚖️ Ticket 2: Balanced (30% of Daily Stake)
-        • [Match Name] ➔ [Prediction]
-        • [Match Name] ➔ [Prediction]
-        • [Match Name] ➔ [Prediction]
-        ↳ Reserve: [Match Name] ➔ [Prediction]
+        • [Match Name] ➔ [Allowed Market]
+        • [Match Name] ➔ [Allowed Market]
+        • [Match Name] ➔ [Allowed Market]
+        ↳ Reserve: [Match Name] ➔ [Allowed Market]
 
         🎯 Ticket 3: Volatility (30% of Daily Stake)
-        • [Match Name] ➔ [Prediction]
-        • [Match Name] ➔ [Prediction]
-        • [Match Name] ➔ [Prediction]
-        ↳ Reserve: [Match Name] ➔ [Prediction]
+        • [Match Name] ➔ [Allowed Market]
+        • [Match Name] ➔ [Allowed Market]
+        • [Match Name] ➔ [Allowed Market]
+        ↳ Reserve: [Match Name] ➔ [Allowed Market]
 
         🧪 Ticket 4: Custom Tickets (10% of Daily Stake)
-        • [Match Name] ➔ [Prediction]
-        • [Match Name] ➔ [Prediction]
-        • [Match Name] ➔ [Prediction]
-        ↳ Reserve: [Match Name] ➔ [Prediction]
+        • [Match Name] ➔ [Allowed Market]
+        • [Match Name] ➔ [Allowed Market]
+        • [Match Name] ➔ [Allowed Market]
+        ↳ Reserve: [Match Name] ➔ [Allowed Market]
         """
 
         payload = {"contents": [{"parts": [{"text": prompt}]}]}
@@ -2109,8 +2128,9 @@ class ConsensusEngine:
 
                         if valid_output:
                             self.diagnostics["AI_Handshake"] = f"🟢 Connected ({model_name})"
-                            self.diagnostics["AI_Status"] = "🟢 Optimization Complete (4 Tickets | 3+1 Reserve Each)"
+                            self.diagnostics["AI_Status"] = "🟢 Optimization Complete (4 Tickets | 3+1 Reserve Each | Mixed Markets | DNB Disabled)"
                             self.diagnostics["Ticket_Requirement"] = "🟢 4 tickets × minimum 3 primary + 1 reserve"
+                            self.diagnostics["Market_Mode"] = "🟢 Mixed Markets Enabled | DNB Disabled"
                             self.diagnostics["Reserve_Source"] = (
                                 f"🟢 Preferred: {len(reserve_pool)} exact-3 agreement candidates"
                                 if reserve_pool
@@ -2118,13 +2138,8 @@ class ConsensusEngine:
                             )
                             return candidate_text
 
-                        last_error = (
-                            f"Invalid ticket output ({validation_reason}) "
-                            f"from {model_name}"
-                        )
-                        self.diagnostics["AI_Status"] = (
-                            f"🟡 RETRYING ({validation_reason})"
-                        )
+                        last_error = f"Invalid ticket output ({validation_reason}) from {model_name}"
+                        self.diagnostics["AI_Status"] = f"🟡 RETRYING ({validation_reason})"
                         time.sleep(1)
                         continue
 
@@ -2137,8 +2152,7 @@ class ConsensusEngine:
                     if response.status_code in [500, 503, 429]:
                         time.sleep(2 * attempt)
                         continue
-                    else:
-                        break
+                    break
                 except Exception as e:
                     last_error = f"Network Exception: {e}"
                     time.sleep(2 * attempt)
@@ -2149,9 +2163,13 @@ class ConsensusEngine:
 
     @staticmethod
     def _validate_ticket_output(text, core_ai_input_data=None, fallback_ai_input_data=None):
-        """Ensure Gemini produced four tickets with 3+ primary picks and one reserve each."""
+        """Validate four tickets, mixed allowed markets, 3+1 structure, and DNB ban."""
         if not isinstance(text, str) or not text.strip():
             return False, "EMPTY_RESPONSE"
+
+        # DNB is explicitly forbidden regardless of casing or punctuation.
+        if re.search(r"\b(?:DNB|DRAW\s*[- ]?\s*NO\s*[- ]?\s*BET)\b", text, re.IGNORECASE):
+            return False, "DRAW_NO_BET_FORBIDDEN"
 
         required_headers = [
             "🛡️ Ticket 1: Ironclad (30% of Daily Stake)",
@@ -2188,39 +2206,60 @@ class ConsensusEngine:
         )
         reserve_source_matches = all_research_matches
 
+        # Supported prediction forms. DNB is deliberately absent.
+        allowed_prediction_pattern = re.compile(
+            r"^(?:"
+            r"1|X|2|1X|X2|12|"
+            r"OVER\s+\d+(?:\.\d+)?\s+(?:GOALS|CORNERS)|"
+            r"UNDER\s+\d+(?:\.\d+)?\s+(?:GOALS|CORNERS)|"
+            r"BTTS\s+(?:YES|NO)"
+            r")$",
+            re.IGNORECASE,
+        )
+
         for index, start_pos in enumerate(positions):
             end_pos = positions[index + 1] if index + 1 < len(positions) else len(text)
             section = text[start_pos:end_pos]
 
-            # Primary bullets are lines starting with the bullet character.
             primary_lines = re.findall(r"(?m)^\s*•\s*.+$", section)
             if len(primary_lines) < 3:
                 return False, f"INSUFFICIENT_PRIMARY_SELECTIONS_TICKET_{index + 1}"
 
             reserve_match = re.search(
-                r"(?mi)^\s*↳\s*Reserve:\s*(.+?)\s*➔\s*(1X|X2|12|1|X|2|1X2)\s*$",
+                r"(?mi)^\s*↳\s*Reserve:\s*(.+?)\s*➔\s*(.+?)\s*$",
                 section,
             )
             if not reserve_match:
                 return False, f"MISSING_RESERVE_TICKET_{index + 1}"
 
-            # The reserve line must not be counted as a primary bullet.
             reserve_text = reserve_match.group(1).strip()
-            primary_section_lines = [line.strip() for line in primary_lines]
-            if any(reserve_text in line for line in primary_section_lines):
+            reserve_prediction = reserve_match.group(2).strip()
+            if not allowed_prediction_pattern.match(reserve_prediction):
+                return False, f"INVALID_RESERVE_MARKET_TICKET_{index + 1}: {reserve_prediction}"
+            if re.search(r"\b(?:DNB|DRAW\s*[- ]?\s*NO\s*[- ]?\s*BET)\b", reserve_prediction, re.IGNORECASE):
+                return False, f"DRAW_NO_BET_FORBIDDEN_TICKET_{index + 1}"
+
+            primary_match_names = []
+            for line in primary_lines:
+                content = re.sub(r"^\s*•\s*", "", line).strip()
+                parts = re.split(r"\s*➔\s*", content, maxsplit=1)
+                if len(parts) != 2:
+                    return False, f"INVALID_PRIMARY_FORMAT_TICKET_{index + 1}"
+                match_part, prediction_part = parts[0].strip(), parts[1].strip()
+
+                if not allowed_prediction_pattern.match(prediction_part):
+                    return False, f"INVALID_PRIMARY_MARKET_TICKET_{index + 1}: {prediction_part}"
+                if re.search(r"\b(?:DNB|DRAW\s*[- ]?\s*NO\s*[- ]?\s*BET)\b", prediction_part, re.IGNORECASE):
+                    return False, f"DRAW_NO_BET_FORBIDDEN_TICKET_{index + 1}"
+
+                if match_part not in allowed_main_matches:
+                    return False, f"UNSUPPORTED_PRIMARY_MATCH_TICKET_{index + 1}: {match_part}"
+
+                primary_match_names.append(match_part)
+
+            if reserve_text in primary_match_names:
                 return False, f"RESERVE_DUPLICATES_PRIMARY_TICKET_{index + 1}"
 
-            if allowed_main_matches:
-                # Every visible primary line must map to a supplied candidate.
-                for line in primary_lines:
-                    content = re.sub(r"^\s*•\s*", "", line).strip()
-                    match_part = re.split(r"\s*➔\s*", content, maxsplit=1)[0].strip()
-                    if match_part not in allowed_main_matches:
-                        return False, f"UNSUPPORTED_PRIMARY_MATCH_TICKET_{index + 1}: {match_part}"
-
-            # Reserves should come from the exact-3 pool when possible. When the
-            # 3+ pool exists, enforce it so Gemini cannot silently use a 4+ match
-            # as the reserve while suitable 3+ candidates are available.
             if reserve_source_matches and reserve_text not in reserve_source_matches:
                 return False, f"RESERVE_NOT_FROM_3PLUS_POOL_TICKET_{index + 1}: {reserve_text}"
 
