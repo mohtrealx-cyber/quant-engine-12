@@ -53,33 +53,37 @@
     "2026-09-20": {
         "locked": true,
         "agreed_matches": [
-            "\u2022 **Leeds vs Crystal Palace** \u2794 1\n  \u21b3 \u2705 Backed by: `WinDrawWin + Vitibet + Statarea + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26a0\ufe0f SoccerVista backed: X\n",
-            "\u2022 **Man City vs Sunderland** \u2794 1\n  \u21b3 \u2705 Backed by: `WinDrawWin + Vitibet + Statarea + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
-            "\u2022 **Norwich vs Bolton** \u2794 1\n  \u21b3 \u2705 Backed by: `WinDrawWin + Statarea + Vitibet + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
-            "\u2022 **Wolves vs West Brom** \u2794 1\n  \u21b3 \u2705 Backed by: `WinDrawWin + Vitibet + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
-            "\u2022 **Celtic vs Rangers** \u2794 1\n  \u21b3 \u2705 Backed by: `WinDrawWin + Vitibet + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
-            "\u2022 **Ac Milan vs Lecce** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + PredictZ + SoccerVista`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26a0\ufe0f WinDrawWin backed: 2\n",
-            "\u2022 **Fiorentina vs Napoli** \u2794 2\n  \u21b3 \u2705 Backed by: `Vitibet + PredictZ + SoccerVista`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26a0\ufe0f WinDrawWin backed: X\n",
-            "\u2022 **Frosinone vs Como** \u2794 2\n  \u21b3 \u2705 Backed by: `WinDrawWin + Vitibet + SoccerVista`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26a0\ufe0f PredictZ backed: X\n",
-            "\u2022 **Juventus vs Atalanta** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + PredictZ + SoccerVista`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26a0\ufe0f WinDrawWin backed: X\n",
-            "\u2022 **Getafe vs Malaga** \u2794 1\n  \u21b3 \u2705 Backed by: `WinDrawWin + Vitibet + Statarea + PredictZ + SoccerVista + Expected90`\n  \u21b3 \u26aa Golsinyali: Not Listed\n",
-            "\u2022 **Valencia vs Real Sociedad** \u2794 2\n  \u21b3 \u2705 Backed by: `WinDrawWin + PredictZ + SoccerVista`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26a0\ufe0f Vitibet backed: 1\n",
-            "\u2022 **Paderborn vs Hoffenheim** \u2794 2\n  \u21b3 \u2705 Backed by: `WinDrawWin + Vitibet + SoccerVista`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26a0\ufe0f PredictZ backed: X\n",
-            "\u2022 **Estrela Amadora vs Academico Viseu** \u2794 1\n  \u21b3 \u2705 Backed by: `WinDrawWin + Vitibet + PredictZ + SoccerVista`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n",
-            "\u2022 **Fc Porto vs Benfica** \u2794 X\n  \u21b3 \u2705 Backed by: `WinDrawWin + Vitibet + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26a0\ufe0f SoccerVista backed: 2\n",
-            "\u2022 **Guimaraes vs Moreirense** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + Statarea + PredictZ + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26a0\ufe0f WinDrawWin backed: 2\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
-            "\u2022 **Rosario Central vs Argentinos Juniors** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + PredictZ + SoccerVista + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26a0\ufe0f WinDrawWin backed: 2\n",
-            "\u2022 **San Lorenzo vs Boca Juniors** \u2794 X\n  \u21b3 \u2705 Backed by: `WinDrawWin + Vitibet + PredictZ + SoccerVista`\n  \u21b3 \u26a0\ufe0f Golsinyali backed: 2\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n",
-            "\u2022 **Corinthians vs Fluminense** \u2794 2\n  \u21b3 \u2705 Backed by: `WinDrawWin + PredictZ + SoccerVista`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26a0\ufe0f Vitibet backed: X\n",
-            "\u2022 **Flamengo vs Bragantino** \u2794 1\n  \u21b3 \u2705 Backed by: `WinDrawWin + Vitibet + PredictZ + SoccerVista`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n",
-            "\u2022 **Gremio vs Palmeiras** \u2794 2\n  \u21b3 \u2705 Backed by: `WinDrawWin + Vitibet + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26a0\ufe0f SoccerVista backed: X\n",
-            "\u2022 **Feyenoord vs Utrecht** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + PredictZ + SoccerVista`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n",
-            "\u2022 **Az Alkmaar vs Telstar** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + PredictZ + SoccerVista`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n",
-            "\u2022 **Viking vs Lillestrom** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + Statarea + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa PredictZ: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
-            "\u2022 **Djurg\u00e5rdens If vs If Elfsborg** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + Statarea + Expected90`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa PredictZ: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
-            "\u2022 **Kristianstads Dff (W) vs Pitea If (W)** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa PredictZ: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n"
+            "\u2022 **Leeds vs Crystal Palace** \u2794 1\n  \u21b3 \u2705 Backed by: `WinDrawWin + Statarea + Vitibet + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Foresportia: Not Listed\n  \u21b3 \u26a0\ufe0f SoccerVista backed: X\n",
+            "\u2022 **Man City vs Sunderland** \u2794 1\n  \u21b3 \u2705 Backed by: `WinDrawWin + Statarea + Vitibet + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Foresportia: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
+            "\u2022 **Norwich vs Bolton** \u2794 1\n  \u21b3 \u2705 Backed by: `WinDrawWin + Statarea + Vitibet + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Foresportia: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
+            "\u2022 **Wolves vs West Brom** \u2794 1\n  \u21b3 \u2705 Backed by: `WinDrawWin + Vitibet + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Foresportia: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
+            "\u2022 **Celtic vs Rangers** \u2794 1\n  \u21b3 \u2705 Backed by: `WinDrawWin + Vitibet + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Foresportia: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
+            "\u2022 **Ac Milan vs Lecce** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + PredictZ + SoccerVista`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Foresportia: Not Listed\n  \u21b3 \u26a0\ufe0f WinDrawWin backed: 2\n",
+            "\u2022 **Fiorentina vs Napoli** \u2794 2\n  \u21b3 \u2705 Backed by: `Vitibet + PredictZ + SoccerVista`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Foresportia: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26a0\ufe0f WinDrawWin backed: X\n",
+            "\u2022 **Frosinone vs Como** \u2794 2\n  \u21b3 \u2705 Backed by: `WinDrawWin + Vitibet + SoccerVista`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Foresportia: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26a0\ufe0f PredictZ backed: X\n",
+            "\u2022 **Juventus vs Atalanta** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + PredictZ + SoccerVista`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Foresportia: Not Listed\n  \u21b3 \u26a0\ufe0f WinDrawWin backed: X\n",
+            "\u2022 **Getafe vs Malaga** \u2794 1\n  \u21b3 \u2705 Backed by: `WinDrawWin + Statarea + Vitibet + PredictZ + SoccerVista + Expected90`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Foresportia: Not Listed\n",
+            "\u2022 **Valencia vs Real Sociedad** \u2794 2\n  \u21b3 \u2705 Backed by: `WinDrawWin + PredictZ + SoccerVista`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Foresportia: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26a0\ufe0f Vitibet backed: 1\n",
+            "\u2022 **Villarreal vs Levante** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Foresportia: Not Listed\n  \u21b3 \u26a0\ufe0f WinDrawWin backed: 2\n  \u21b3 \u26a0\ufe0f SoccerVista backed: X\n",
+            "\u2022 **Paderborn vs Hoffenheim** \u2794 2\n  \u21b3 \u2705 Backed by: `WinDrawWin + Vitibet + SoccerVista`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Foresportia: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26a0\ufe0f PredictZ backed: X\n",
+            "\u2022 **Estoril vs Casa Pia Atletico** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Foresportia: Not Listed\n  \u21b3 \u26a0\ufe0f WinDrawWin backed: 2\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
+            "\u2022 **Estrela Amadora vs Academico Viseu** \u2794 1\n  \u21b3 \u2705 Backed by: `WinDrawWin + Vitibet + PredictZ + SoccerVista`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Foresportia: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n",
+            "\u2022 **Fc Porto vs Benfica** \u2794 X\n  \u21b3 \u2705 Backed by: `WinDrawWin + Vitibet + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Foresportia: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26a0\ufe0f SoccerVista backed: 2\n",
+            "\u2022 **Guimaraes vs Moreirense** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + PredictZ + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Foresportia: Not Listed\n  \u21b3 \u26a0\ufe0f WinDrawWin backed: 2\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
+            "\u2022 **Rosario Central vs Argentinos Juniors** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + PredictZ + SoccerVista + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Foresportia: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26a0\ufe0f WinDrawWin backed: 2\n",
+            "\u2022 **San Lorenzo vs Boca Juniors** \u2794 X\n  \u21b3 \u2705 Backed by: `WinDrawWin + Vitibet + PredictZ + SoccerVista`\n  \u21b3 \u26a0\ufe0f Golsinyali backed: 2\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Foresportia: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n",
+            "\u2022 **Flamengo vs Bragantino** \u2794 1\n  \u21b3 \u2705 Backed by: `WinDrawWin + Vitibet + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Foresportia: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
+            "\u2022 **Gremio vs Palmeiras** \u2794 2\n  \u21b3 \u2705 Backed by: `WinDrawWin + Vitibet + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Foresportia: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
+            "\u2022 **Slavia Praha vs Viktoria Plzen** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Foresportia: Not Listed\n  \u21b3 \u26aa PredictZ: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
+            "\u2022 **Fenerbahce vs Eyupspor** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + SoccerVista`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Foresportia: Not Listed\n  \u21b3 \u26aa PredictZ: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n",
+            "\u2022 **Viking vs Lillestrom** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Foresportia: Not Listed\n  \u21b3 \u26aa PredictZ: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
+            "\u2022 **Djurgarden vs If Elfsborg** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + Expected90`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Foresportia: Not Listed\n  \u21b3 \u26aa PredictZ: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
+            "\u2022 **Kristianstads Dff (W) vs Pitea If (W)** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Foresportia: Not Listed\n  \u21b3 \u26aa PredictZ: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
+            "\u2022 **Carl Zeiss Jena vs Lokomotive Leipzig** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Foresportia: Not Listed\n  \u21b3 \u26aa PredictZ: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
+            "\u2022 **Feyenoord vs Utrecht** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + PredictZ + SoccerVista`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Foresportia: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n",
+            "\u2022 **Az Alkmaar vs Telstar** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + PredictZ + SoccerVista`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Foresportia: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n"
         ],
-        "ai_optimized_message": "\ud83d\udee1\ufe0f Ticket 1: Ironclad (40% of Daily Stake)\n\u2022 Man City vs Sunderland \u2794 Man City to Win & Over 1.5 Goals\n\u2022 Getafe vs Malaga \u2794 Getafe to Win (1)\n\u2022 Feyenoord vs Utrecht \u2794 Feyenoord to Win (1)\n\ud83d\udd04 [RESERVE PICK]: Estrela Amadora vs Academico Viseu \u2794 Estrela Amadora to Win (1)\n\n\u2696\ufe0f Ticket 2: Balanced (20% of Daily Stake)\n\u2022 Bournemouth vs Liverpool \u2794 Over 8.5 Total Corners\n\u2022 Fiorentina vs Napoli \u2794 Napoli to Win or Draw (X2)\n\u2022 Flamengo vs Bragantino \u2794 Flamengo to Win (1)\n\ud83d\udd04 [RESERVE PICK]: Ia Akranes vs Breidablik \u2794 Over 9.5 Total Corners\n\n\ud83c\udfaf Ticket 3: Volatility (10% of Daily Stake)\n\u2022 Juventus vs Atalanta \u2794 Juventus Draw No Bet (1 DNB)\n\u2022 Frosinone vs Como \u2794 Como Draw No Bet (2 DNB)\n\u2022 Leeds vs Crystal Palace \u2794 Leeds to Win or Draw (1X)\n\ud83d\udd04 [RESERVE PICK]: San Lorenzo vs Boca Juniors \u2794 Match Result: Draw (X)\n\n\ud83e\uddea Ticket 4: Custom Tickets (30% of Daily Stake)",
+        "ai_optimized_message": "\ud83d\udee1\ufe0f Ticket 1: Ironclad (40% of Daily Stake)\n\u2022 Man City vs Sunderland \u2794 Man City to Win\n\u2022 Getafe vs Malaga \u2794 Getafe to Win\n\u2022 Feyenoord vs Utrecht \u2794 Feyenoord to Win\n\ud83d\udd04 [RESERVE PICK]: Fenerbahce vs Eyupspor \u2794 Fenerbahce to Win\n\n\u2696\ufe0f Ticket 2: Balanced (20% of Daily Stake)\n\u2022 Ia Akranes vs Breidablik \u2794 Over 9.5 Corners\n\u2022 Keflavik vs Fram Reykjavik \u2794 Over 9.5 Corners\n\u2022 Ac Milan vs Lecce \u2794 AC Milan Win or Draw (1X)\n\ud83d\udd04 [RESERVE PICK]: Ibv Vestmannaeyjar vs Valur Reykjavik \u2794 Over 9.5 Corners\n\n\ud83c\udfaf Ticket 3: Volatility (10% of Daily Stake)\n\u2022 Juventus vs Atalanta \u2794 Juventus Win or Draw (1X)\n\u2022 Paderborn vs Hoffenheim \u2794 Hoffenheim Draw No Bet (2 DNB)\n\u2022 Gremio vs Palmeiras \u2794 Palmeiras Draw No Bet (2 DNB)\n\ud83d\udd04 [RESERVE PICK]: Valerenga vs Fredrikstad \u2794 Over 9.5 Corners\n\n\ud83e\uddea Ticket 4: Custom Tickets (30% of Daily Stake)",
         "req_threshold": 3,
         "tickets": [
             {
@@ -149,8 +153,20 @@
                 "score": "-"
             },
             {
+                "match": "Villarreal vs Levante",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
                 "match": "Paderborn vs Hoffenheim",
                 "prediction": "2",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Estoril vs Casa Pia Atletico",
+                "prediction": "1",
                 "status": "PENDING",
                 "score": "-"
             },
@@ -185,12 +201,6 @@
                 "score": "-"
             },
             {
-                "match": "Corinthians vs Fluminense",
-                "prediction": "2",
-                "status": "PENDING",
-                "score": "-"
-            },
-            {
                 "match": "Flamengo vs Bragantino",
                 "prediction": "1",
                 "status": "PENDING",
@@ -203,13 +213,13 @@
                 "score": "-"
             },
             {
-                "match": "Feyenoord vs Utrecht",
+                "match": "Slavia Praha vs Viktoria Plzen",
                 "prediction": "1",
                 "status": "PENDING",
                 "score": "-"
             },
             {
-                "match": "Az Alkmaar vs Telstar",
+                "match": "Fenerbahce vs Eyupspor",
                 "prediction": "1",
                 "status": "PENDING",
                 "score": "-"
@@ -221,13 +231,31 @@
                 "score": "-"
             },
             {
-                "match": "Djurg\u00e5rdens If vs If Elfsborg",
+                "match": "Djurgarden vs If Elfsborg",
                 "prediction": "1",
                 "status": "PENDING",
                 "score": "-"
             },
             {
                 "match": "Kristianstads Dff (W) vs Pitea If (W)",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Carl Zeiss Jena vs Lokomotive Leipzig",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Feyenoord vs Utrecht",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Az Alkmaar vs Telstar",
                 "prediction": "1",
                 "status": "PENDING",
                 "score": "-"
