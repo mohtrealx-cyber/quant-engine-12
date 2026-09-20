@@ -2051,10 +2051,15 @@ class ConsensusEngine:
             Double Chance market instead of guessing.
 
         TICKET ALLOCATION:
-        - 🛡️ Ticket 1: 30% of Daily Stake
-        - ⚖️ Ticket 2: 30% of Daily Stake
-        - 🎯 Ticket 3: 30% of Daily Stake
-        - 🧪 Ticket 4: 10% of Daily Stake
+        - 🛡️ Ticket 1: 40% of Daily Stake
+        - ⚖️ Ticket 2: 10% of Daily Stake
+        - 🎯 Ticket 3: 10% of Daily Stake
+        - 🧪 Ticket 4: 40% of Daily Stake
+
+        TICKET PRIORITY:
+        - Build and optimize Ticket 1 and Ticket 4 first because each carries 40% of the Daily Stake.
+        - Assign the strongest, highest-confidence eligible selections to Ticket 1 and Ticket 4 before populating Ticket 2 and Ticket 3.
+        - Do not place a stronger eligible selection into Ticket 2 or Ticket 3 while Ticket 1 or Ticket 4 still has an available primary slot.
 
         CRITICAL TICKET RULES:
         18. ALL FOUR tickets MUST be generated.
@@ -2078,25 +2083,25 @@ class ConsensusEngine:
 
         EXACT OUTPUT FORMAT:
 
-        🛡️ Ticket 1: Ironclad (30% of Daily Stake)
+        🛡️ Ticket 1: Ironclad (40% of Daily Stake)
         • [Match Name] ➔ [Allowed Market]
         • [Match Name] ➔ [Allowed Market]
         • [Match Name] ➔ [Allowed Market]
         ↳ Reserve: [Match Name] ➔ [Allowed Market]
 
-        ⚖️ Ticket 2: Balanced (30% of Daily Stake)
+        ⚖️ Ticket 2: Balanced (10% of Daily Stake)
         • [Match Name] ➔ [Allowed Market]
         • [Match Name] ➔ [Allowed Market]
         • [Match Name] ➔ [Allowed Market]
         ↳ Reserve: [Match Name] ➔ [Allowed Market]
 
-        🎯 Ticket 3: Volatility (30% of Daily Stake)
+        🎯 Ticket 3: Volatility (10% of Daily Stake)
         • [Match Name] ➔ [Allowed Market]
         • [Match Name] ➔ [Allowed Market]
         • [Match Name] ➔ [Allowed Market]
         ↳ Reserve: [Match Name] ➔ [Allowed Market]
 
-        🧪 Ticket 4: Custom Tickets (10% of Daily Stake)
+        🧪 Ticket 4: Custom Tickets (40% of Daily Stake)
         • [Match Name] ➔ [Allowed Market]
         • [Match Name] ➔ [Allowed Market]
         • [Match Name] ➔ [Allowed Market]
@@ -2172,10 +2177,10 @@ class ConsensusEngine:
             return False, "DRAW_NO_BET_FORBIDDEN"
 
         required_headers = [
-            "🛡️ Ticket 1: Ironclad (30% of Daily Stake)",
-            "⚖️ Ticket 2: Balanced (30% of Daily Stake)",
-            "🎯 Ticket 3: Volatility (30% of Daily Stake)",
-            "🧪 Ticket 4: Custom Tickets (10% of Daily Stake)",
+            "🛡️ Ticket 1: Ironclad (40% of Daily Stake)",
+            "⚖️ Ticket 2: Balanced (10% of Daily Stake)",
+            "🎯 Ticket 3: Volatility (10% of Daily Stake)",
+            "🧪 Ticket 4: Custom Tickets (40% of Daily Stake)",
         ]
 
         positions = []
