@@ -1789,11 +1789,12 @@ class ConsensusEngine:
         Build two consensus tiers:
 
         * CORE: at least 4 independent 1X2 sources agree.
-        * RESEARCH FALLBACK: exactly 3 sources agree.
+        * RESEARCH / RESERVE: exactly 3 sources agree.
 
-        The 3+ tier is not promoted automatically. It is only exposed to
-        Gemini when the 4+ pool contains fewer than four usable matches,
-        because four tickets must still be generated.
+        The 3+ tier is primarily used for one reserve pick per ticket. It is
+        also exposed to Gemini for main-ticket selections when the 4+ core
+        pool contains fewer than 12 usable matches (four tickets x three
+        minimum selections).
         """
         core_matches = []
         fallback_matches = []
@@ -1814,7 +1815,7 @@ class ConsensusEngine:
 
         required_consensus = 4
         fallback_consensus = 3
-        min_core_matches_for_full_ticket_pool = 4
+        min_core_matches_for_full_ticket_pool = 12
 
         def build_match_record(match, listings, top_pick, tier_label):
             prediction_weights = {}
@@ -1918,6 +1919,10 @@ class ConsensusEngine:
             if fallback_active
             else "🛡️ STRICT CORE ONLY (4+)"
         )
+        self.diagnostics["Ticket_Pool_Requirement"] = (
+            f"4 tickets × 3 minimum primary = 12 slots | "
+            f"3+ reserve pool = {len(fallback_ai_input_data)} candidates"
+        )
 
         return (
             core_matches,
@@ -1969,13 +1974,28 @@ class ConsensusEngine:
         models_to_try = self.get_available_gemini_models(api_key)
         secondary_market_data = secondary_market_data or []
 
-        fallback_active = len(core_ai_input_data) < 4
+        # Four tickets x three minimum selections = 12 primary slots.
+        # The 3+ pool becomes available for primary selections only when the
+        # 4+ core pool is too small to fill those 12 slots.
+        fallback_active = len(core_ai_input_data) < 12
         research_pool = list(fallback_ai_input_data) if fallback_active else []
+
+        # Reserves should come primarily from the exact-3 agreement pool.
+        # Rank the reserve pool by lower contradiction count while keeping the
+        # agreement count explicit for Gemini.
+        reserve_pool = sorted(
+            fallback_ai_input_data,
+            key=lambda item: (
+                len(item.get("contradictions", [])),
+                -int(item.get("agreement_count", 0) or 0),
+                item.get("match", ""),
+            ),
+        )
 
         prompt = f"""
         You are Titan, an elite quantitative sports betting AI Portfolio Manager.
-        Your job is to construct four complete, non-blank daily tickets from the
-        evidence supplied below.
+        Your job is to construct four complete daily tickets from the evidence
+        supplied below.
 
         === PRIMARY CONSENSUS POOL: 4+ SOURCES ===
         {json.dumps(core_ai_input_data, indent=2)}
@@ -1983,27 +2003,30 @@ class ConsensusEngine:
         === FALLBACK RESEARCH POOL: EXACTLY 3 SOURCES ===
         {json.dumps(research_pool, indent=2)}
 
+        === RESERVED-PICK POOL: EXACTLY 3 SOURCES (PREFERRED FOR RESERVES) ===
+        {json.dumps(reserve_pool, indent=2)}
+
         === HIGH-PROBABILITY CORNER STATISTICS ===
         {json.dumps(active_corner_teams, indent=2)}
 
         === SECONDARY MARKET SIGNALS (SOCCERAITIPS) ===
         {json.dumps(secondary_market_data, indent=2)}
 
-        IMPORTANT SOURCE RULES:
+        SOURCE RULES:
         1. A PRIMARY candidate requires 4 or more independent 1X2 sources agreeing
            on the same result.
-        2. A FALLBACK candidate has exactly 3 agreeing sources and may only be used
-           when the primary pool contains fewer than four usable matches.
+        2. A FALLBACK candidate has exactly 3 agreeing sources.
         3. FALLBACK MODE is currently: {"ACTIVE" if fallback_active else "INACTIVE"}.
-        4. When FALLBACK MODE is INACTIVE, do NOT select any 3+ candidate.
-        5. When FALLBACK MODE is ACTIVE, perform a deeper comparative analysis of
-           the 3+ candidates before selecting them. Prioritize stronger agreement,
-           fewer contradictions, fixture consistency, and supporting corner or
-           secondary-market evidence when available.
-        6. Never invent a consensus source, prediction, fixture, probability, or
+        4. When FALLBACK MODE is INACTIVE, main-ticket selections MUST come from
+           the 4+ primary pool only.
+        5. When FALLBACK MODE is ACTIVE, you may use the 3+ research pool for main
+           selections only as needed to reach the minimum ticket requirements.
+        6. RESERVES should come from the EXACTLY-3 reserve pool above whenever
+           possible, regardless of fallback mode. Do not use an unlisted reserve.
+        7. Never invent a consensus source, prediction, fixture, probability, or
            statistic that is not present in the supplied data.
-        7. SoccerAiTips BTTS/Over 2.5 signals are secondary evidence only; they are
-           never counted as 1X2 consensus votes.
+        8. SoccerAiTips BTTS/Over 2.5 signals are secondary evidence only; they
+           never count as 1X2 consensus votes.
 
         TICKET ALLOCATION:
         - 🛡️ Ticket 1: 30% of Daily Stake
@@ -2012,37 +2035,57 @@ class ConsensusEngine:
         - 🧪 Ticket 4: 10% of Daily Stake
 
         CRITICAL TICKET RULES:
-        8. ALL FOUR tickets MUST be generated. No ticket may be blank.
-        9. Every ticket must contain at least ONE concrete selection.
-        10. Prefer different matches across tickets. Do not repeat a match unless
-            the available unique candidate pool is too small to populate four
-            non-blank tickets.
-        11. Do not force extra selections merely to make a ticket look full.
-        12. When there are enough unique candidates, distribute them across the
-            four tickets according to risk, with Ticket 4 generally the leanest.
-        13. A corner selection may be used only when the supplied corner statistics
-            support it.
-        14. Apply risk mitigation directly on the ticket lines.
-        15. Output ONLY the four formatted tickets. No explanations, no analysis
-            paragraphs, and no blank ticket.
+        9. ALL FOUR tickets MUST be generated.
+        10. EVERY ticket MUST contain at least THREE primary selections.
+        11. EVERY ticket MUST contain EXACTLY ONE reserve selection.
+        12. Total minimum = 12 primary selections + 4 reserves.
+        13. Prefer unique primary matches across tickets. Repeat a primary match
+            only when the available eligible pool is too small to reach the minimum.
+        14. Keep each ticket internally unique: its reserve must not duplicate one
+            of that ticket's three primary selections.
+        15. Prefer different reserve matches across tickets. Reuse a reserve only
+            if there are fewer than four suitable 3+ reserve candidates.
+        16. The reserve is NOT part of the ticket's main stake calculation; label it
+            clearly as a reserve.
+        17. RESERVE PRIORITY: choose reserves primarily from the supplied 3+
+            agreement pool, favoring clean agreement records with fewer
+            contradictions. Use a 4+ candidate as a reserve only as an emergency
+            when there are insufficient suitable 3+ candidates.
+        18. Do not force extra primary selections beyond the minimum unless useful
+            for the risk profile and supported by the supplied evidence.
+        19. Apply risk mitigation directly on the ticket lines.
+        20. Output ONLY the four formatted tickets. No explanations and no analysis
+            paragraphs.
 
         EXACT OUTPUT FORMAT:
 
         🛡️ Ticket 1: Ironclad (30% of Daily Stake)
         • [Match Name] ➔ [Prediction]
+        • [Match Name] ➔ [Prediction]
+        • [Match Name] ➔ [Prediction]
+        ↳ Reserve: [Match Name] ➔ [Prediction]
 
         ⚖️ Ticket 2: Balanced (30% of Daily Stake)
         • [Match Name] ➔ [Prediction]
+        • [Match Name] ➔ [Prediction]
+        • [Match Name] ➔ [Prediction]
+        ↳ Reserve: [Match Name] ➔ [Prediction]
 
         🎯 Ticket 3: Volatility (30% of Daily Stake)
         • [Match Name] ➔ [Prediction]
+        • [Match Name] ➔ [Prediction]
+        • [Match Name] ➔ [Prediction]
+        ↳ Reserve: [Match Name] ➔ [Prediction]
 
         🧪 Ticket 4: Custom Tickets (10% of Daily Stake)
         • [Match Name] ➔ [Prediction]
+        • [Match Name] ➔ [Prediction]
+        • [Match Name] ➔ [Prediction]
+        ↳ Reserve: [Match Name] ➔ [Prediction]
         """
 
         payload = {"contents": [{"parts": [{"text": prompt}]}]}
-        
+
         last_error = "Unknown"
         for model_name in models_to_try:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
@@ -2059,12 +2102,20 @@ class ConsensusEngine:
                         )
 
                         valid_output, validation_reason = self._validate_ticket_output(
-                            candidate_text
+                            candidate_text,
+                            core_ai_input_data,
+                            fallback_ai_input_data,
                         )
 
                         if valid_output:
                             self.diagnostics["AI_Handshake"] = f"🟢 Connected ({model_name})"
-                            self.diagnostics["AI_Status"] = "🟢 Optimization Complete (4 Tickets Validated)"
+                            self.diagnostics["AI_Status"] = "🟢 Optimization Complete (4 Tickets | 3+1 Reserve Each)"
+                            self.diagnostics["Ticket_Requirement"] = "🟢 4 tickets × minimum 3 primary + 1 reserve"
+                            self.diagnostics["Reserve_Source"] = (
+                                f"🟢 Preferred: {len(reserve_pool)} exact-3 agreement candidates"
+                                if reserve_pool
+                                else "🟡 No exact-3 candidates available; emergency reserve fallback may be used"
+                            )
                             return candidate_text
 
                         last_error = (
@@ -2076,7 +2127,7 @@ class ConsensusEngine:
                         )
                         time.sleep(1)
                         continue
-                    
+
                     try:
                         err_detail = response.json().get("error", {}).get("message", response.text[:100])
                     except Exception:
@@ -2097,8 +2148,8 @@ class ConsensusEngine:
         return None
 
     @staticmethod
-    def _validate_ticket_output(text):
-        """Ensure Gemini produced all four non-blank ticket sections."""
+    def _validate_ticket_output(text, core_ai_input_data=None, fallback_ai_input_data=None):
+        """Ensure Gemini produced four tickets with 3+ primary picks and one reserve each."""
         if not isinstance(text, str) or not text.strip():
             return False, "EMPTY_RESPONSE"
 
@@ -2119,11 +2170,59 @@ class ConsensusEngine:
         if positions != sorted(positions):
             return False, "INVALID_HEADER_ORDER"
 
+        all_core_matches = {
+            item.get("match")
+            for item in (core_ai_input_data or [])
+            if item.get("match")
+        }
+        all_research_matches = {
+            item.get("match")
+            for item in (fallback_ai_input_data or [])
+            if item.get("match")
+        }
+        main_fallback_active = len(all_core_matches) < 12
+        allowed_main_matches = (
+            all_core_matches | all_research_matches
+            if main_fallback_active
+            else all_core_matches
+        )
+        reserve_source_matches = all_research_matches
+
         for index, start_pos in enumerate(positions):
             end_pos = positions[index + 1] if index + 1 < len(positions) else len(text)
             section = text[start_pos:end_pos]
-            if not re.search(r"(?m)^\s*•\s*.+$", section):
-                return False, f"BLANK_TICKET_{index + 1}"
+
+            # Primary bullets are lines starting with the bullet character.
+            primary_lines = re.findall(r"(?m)^\s*•\s*.+$", section)
+            if len(primary_lines) < 3:
+                return False, f"INSUFFICIENT_PRIMARY_SELECTIONS_TICKET_{index + 1}"
+
+            reserve_match = re.search(
+                r"(?mi)^\s*↳\s*Reserve:\s*(.+?)\s*➔\s*(1X|X2|12|1|X|2|1X2)\s*$",
+                section,
+            )
+            if not reserve_match:
+                return False, f"MISSING_RESERVE_TICKET_{index + 1}"
+
+            # The reserve line must not be counted as a primary bullet.
+            reserve_text = reserve_match.group(1).strip()
+            primary_section_lines = [line.strip() for line in primary_lines]
+            if any(reserve_text in line for line in primary_section_lines):
+                return False, f"RESERVE_DUPLICATES_PRIMARY_TICKET_{index + 1}"
+
+            if allowed_main_matches:
+                # Every visible primary line must map to a supplied candidate.
+                for line in primary_lines:
+                    content = re.sub(r"^\s*•\s*", "", line).strip()
+                    match_part = re.split(r"\s*➔\s*", content, maxsplit=1)[0].strip()
+                    if match_part not in allowed_main_matches:
+                        return False, f"UNSUPPORTED_PRIMARY_MATCH_TICKET_{index + 1}: {match_part}"
+
+            # Reserves should come from the exact-3 pool when possible. When the
+            # 3+ pool exists, enforce it so Gemini cannot silently use a 4+ match
+            # as the reserve while suitable 3+ candidates are available.
+            if reserve_source_matches and reserve_text not in reserve_source_matches:
+                return False, f"RESERVE_NOT_FROM_3PLUS_POOL_TICKET_{index + 1}: {reserve_text}"
 
         return True, "OK"
 
@@ -2356,7 +2455,7 @@ class ConsensusEngine:
                 fallback_active,
             ) = self.process_consensus_signals()
 
-            agreed_matches = core_matches if core_matches else fallback_matches
+            agreed_matches = core_matches
 
             self.diagnostics["Consensus_Pool"] = (
                 f"4+ Core: {len(core_ai_input_data)} | "
