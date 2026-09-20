@@ -9,7 +9,6 @@ import requests
 from bs4 import BeautifulSoup
 import concurrent.futures
 from curl_cffi import requests as tls_requests
-from zoneinfo import ZoneInfo
 
 # ==============================================================================
 # CONFIGURATION & SECURE ROUTING FALLBACKS
@@ -42,11 +41,6 @@ def get_dynamic_configs():
             "url": "https://www.socceraitips.com/api/daily-parlay",
             "fallback_url": None,
             "use_scraperapi": False
-        },
-        "Foresportia": {
-            "url": "https://www.foresportia.com/en/ia-prediction-football.html",
-            "fallback_url": None,
-            "use_scraperapi": True
         },
         "Statarea": {
             "url": f"https://www.statarea.com/predictions/date/{today_date}/",
@@ -1327,379 +1321,6 @@ class ConsensusEngine:
             self.diagnostics["SoccerAiTips"] = f"🔴 FAILED ({exc})"
             self.diagnostics["SoccerAiTips_Detail"] = "No secondary-market data collected."
 
-    # ==========================================================================
-    # FORESPORTIA DEDICATED ADAPTER
-    # ==========================================================================
-    FORESPORTIA_BASE_URL = "https://www.foresportia.com"
-    FORESPORTIA_DISCOVERY_URL = f"{FORESPORTIA_BASE_URL}/en/results_by_date.html"
-    FORESPORTIA_REQUEST_TIMEOUT = 30
-    FORESPORTIA_USER_AGENT = (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/140.0.0.0 Safari/537.36"
-    )
-    FORESPORTIA_SOURCE_TEAM_NAMES = {
-        "AFC Sunderland": "Sunderland",
-        "Arsenal FC": "Arsenal",
-        "FC Liverpool": "Liverpool",
-        "FC Everton": "Everton",
-        "FC Fulham": "Fulham",
-        "FC Brentford": "Brentford",
-    }
-
-    @classmethod
-    def _foresportia_canonical_team_name(cls, value):
-        cleaned = " ".join(str(value or "").split()).strip()
-        return cls.FORESPORTIA_SOURCE_TEAM_NAMES.get(cleaned, cleaned)
-
-    @staticmethod
-    def _foresportia_compact_text(value):
-        value = str(value or "").lower()
-        value = value.replace("&", " and ")
-        value = re.sub(r"[^a-z0-9]+", " ", value)
-        return " ".join(value.split())
-
-    @classmethod
-    def _foresportia_team_matches(cls, target, candidate):
-        target_compact = cls._foresportia_compact_text(target)
-        candidate_compact = cls._foresportia_compact_text(candidate)
-        if not target_compact or not candidate_compact:
-            return False
-        return target_compact == candidate_compact or target_compact in candidate_compact or candidate_compact in target_compact
-
-    def _fetch_foresportia_html(self, url, timeout=60):
-        """Fetch Foresportia directly first, then fall back to ScraperAPI."""
-        headers = {
-            "User-Agent": self.FORESPORTIA_USER_AGENT,
-            "Accept": (
-                "text/html,application/xhtml+xml,application/xml;"
-                "q=0.9,*/*;q=0.8"
-            ),
-            "Accept-Language": "en-US,en;q=0.9",
-            "Referer": self.FORESPORTIA_DISCOVERY_URL,
-        }
-
-        direct_error = None
-
-        # Route 1: direct TLS/browser-like request.
-        # Foresportia's public pages are directly reachable, and this avoids
-        # turning a transient ScraperAPI 5xx into a source failure.
-        try:
-            response = tls_requests.get(
-                url,
-                impersonate="chrome124",
-                headers=headers,
-                timeout=30,
-                allow_redirects=True,
-            )
-            if response.status_code == 200 and response.text.strip():
-                self.diagnostics["Foresportia_Request_Route"] = "🟢 DIRECT"
-                return response.text
-            direct_error = f"HTTP {response.status_code}"
-        except Exception as exc:
-            direct_error = f"{type(exc).__name__}: {exc}"
-
-        # Route 2: ScraperAPI fallback.
-        if SCRAPER_API_KEY:
-            try:
-                response = requests.get(
-                    "https://api.scraperapi.com/",
-                    params={
-                        "api_key": SCRAPER_API_KEY,
-                        "url": url,
-                        "premium": "true",
-                        "country_code": "us",
-                    },
-                    headers=headers,
-                    timeout=timeout,
-                )
-
-                if response.status_code == 200 and response.text.strip():
-                    self.diagnostics["Foresportia_Request_Route"] = "🟢 SCRAPERAPI FALLBACK"
-                    return response.text
-
-                raise RuntimeError(
-                    f"HTTP {response.status_code}"
-                )
-            except Exception as exc:
-                raise RuntimeError(
-                    f"Foresportia request failed. "
-                    f"Direct={direct_error}; ScraperAPI={type(exc).__name__}: {exc}"
-                ) from exc
-
-        raise RuntimeError(
-            f"Foresportia direct request failed: {direct_error}; "
-            "SCRAPER_API_KEY is not configured for fallback."
-        )
-
-    @staticmethod
-    def _foresportia_page_text(html):
-        soup = BeautifulSoup(html, "html.parser")
-        return soup.get_text(" ", strip=True)
-
-    @classmethod
-    def _foresportia_extract_links(cls, html):
-        soup = BeautifulSoup(html, "html.parser")
-        links = []
-        seen = set()
-        for anchor in soup.find_all("a", href=True):
-            href = anchor.get("href", "").strip()
-            if not href:
-                continue
-            if "/prediction/" not in href:
-                continue
-            if href.startswith("/"):
-                url = f"{cls.FORESPORTIA_BASE_URL}{href}"
-            elif href.startswith("http://") or href.startswith("https://"):
-                url = href
-            else:
-                continue
-            if url in seen:
-                continue
-            seen.add(url)
-            links.append((url, anchor.get_text(" ", strip=True)))
-        return links
-
-    @classmethod
-    def _foresportia_find_candidate_links(cls, html, master_keys):
-        all_links = cls._foresportia_extract_links(html)
-        candidates = []
-        seen = set()
-
-        for match_key in master_keys:
-            parts = match_key.split(" vs ", 1)
-            if len(parts) != 2:
-                continue
-            home, away = [p.strip() for p in parts]
-
-            scored = []
-            for url, anchor_text in all_links:
-                combined = f"{anchor_text} {url}"
-                home_ok = cls._foresportia_team_matches(home, combined)
-                away_ok = cls._foresportia_team_matches(away, combined)
-                score = (5 if home_ok and away_ok else 0) + (2 if home_ok else 0) + (2 if away_ok else 0)
-                if score > 0:
-                    scored.append((score, url))
-
-            scored.sort(key=lambda x: (-x[0], x[1]))
-            if scored:
-                best_url = scored[0][1]
-                if best_url not in seen:
-                    candidates.append(best_url)
-                    seen.add(best_url)
-
-        return all_links, candidates
-
-    @classmethod
-    def _foresportia_extract_fixture_names(cls, text):
-        patterns = [
-            re.compile(
-                r"(?P<home>[A-Za-z][A-Za-z0-9.&'’() -]*?)\s+vs\s+"
-                r"(?P<away>[A-Za-z][A-Za-z0-9.&'’() -]*?)\s*:\s*final\s+result\b",
-                re.IGNORECASE,
-            ),
-            re.compile(
-                r"Prediction\s+for\s+(?P<home>[A-Za-z0-9.&'’() -]+?)\s+vs\s+"
-                r"(?P<away>[A-Za-z0-9.&'’() -]+?)\s*:",
-                re.IGNORECASE,
-            ),
-            re.compile(
-                r"Prediction\s+(?P<home>[A-Za-z0-9.&'’() -]+?)\s+vs\s+"
-                r"(?P<away>[A-Za-z0-9.&'’() -]+?)\s*:",
-                re.IGNORECASE,
-            ),
-        ]
-        for pattern in patterns:
-            match = pattern.search(text)
-            if match:
-                home = " ".join(match.group("home").split()).strip()
-                away = " ".join(match.group("away").split()).strip()
-                home = re.sub(r"(?i)^prediction\s+for\s+", "", home).strip()
-                home = re.sub(r"(?i)^prediction\s+", "", home).strip()
-                if home and away:
-                    return home, away
-        return None
-
-    @classmethod
-    def _foresportia_extract_scheduled_kickoff(cls, text):
-        pattern = re.compile(
-            r"(?:Scheduled|Full time)\s+"
-            r"(?P<date>[A-Za-z]+\s+\d{1,2},\s+\d{4})"
-            r"\s*[·•]\s*(?P<time>\d{1,2}:\d{2})",
-            re.IGNORECASE,
-        )
-        match = pattern.search(text)
-        if not match:
-            return None
-        try:
-            parsed = datetime.datetime.strptime(
-                f"{match.group('date')} {match.group('time')}",
-                "%B %d, %Y %H:%M",
-            )
-        except ValueError:
-            return None
-
-        # The reference adapter uses Europe/Paris. We approximate its current
-        # CET offset here; fixture date validation is performed after conversion.
-        source_datetime = parsed.replace(
-            tzinfo=ZoneInfo("Europe/Paris")
-        )
-        return source_datetime.astimezone(datetime.timezone.utc)
-
-    @classmethod
-    def _foresportia_extract_probabilities(cls, text, source_home, source_away):
-        marker = "1X2 PREDICTION BALANCE"
-        pos = text.lower().find(marker.lower())
-        if pos == -1:
-            return None
-        section = text[pos:pos + 1500]
-        escaped_home = re.escape(source_home)
-        escaped_away = re.escape(source_away)
-        percentage = r"(?P<{name}>\d+(?:\.\d+)?)%"
-        pattern = re.compile(
-            rf"{percentage.format(name='home')}\s+.*?{escaped_home}\s+"
-            rf"{percentage.format(name='draw')}\s+Draw\s+"
-            rf"{percentage.format(name='away')}\s+{escaped_away}",
-            re.IGNORECASE | re.DOTALL | re.VERBOSE,
-        )
-        match = pattern.search(section)
-        if not match:
-            return None
-        try:
-            return {
-                "HOME": float(match.group("home")),
-                "DRAW": float(match.group("draw")),
-                "AWAY": float(match.group("away")),
-            }
-        except ValueError:
-            return None
-
-    @staticmethod
-    def _foresportia_probability_to_selection(probabilities):
-        if not probabilities:
-            return None
-        return max(probabilities, key=probabilities.get)
-
-    def fetch_foresportia_sync(self, today_eat=None):
-        """Discover Foresportia match links from the daily board and ingest 1X2 predictions."""
-        master_keys = list(self.master_matrix.keys())
-        if not master_keys:
-            self.diagnostics["Foresportia_Detail"] = (
-                "📊 Discovered: 0 | Candidates: 0 | Today predictions: 0 | "
-                "Matched existing fixtures: 0 | New/unmatched fixtures: 0 | Skipped: 0 | Failed: 0"
-            )
-            self.diagnostics["Foresportia"] = "🟡 NO TARGET FIXTURES"
-            return
-
-        eat_tz = datetime.timezone(datetime.timedelta(hours=3))
-        if today_eat is None:
-            today_eat = (
-                datetime.datetime.now(datetime.timezone.utc)
-                .astimezone(eat_tz)
-                .date()
-            )
-        matched_count = 0
-        new_count = 0
-        skipped_count = 0
-        failed_count = 0
-        valid_count = 0
-
-        try:
-            discovery_html = self._fetch_foresportia_html(
-                self.FORESPORTIA_DISCOVERY_URL,
-                timeout=60,
-            )
-            all_links, candidates = self._foresportia_find_candidate_links(
-                discovery_html, master_keys
-            )
-
-            for link in candidates:
-                try:
-                    match_html = self._fetch_foresportia_html(
-                        link,
-                        timeout=60,
-                    )
-                    text = self._foresportia_page_text(match_html)
-                    fixture_names = self._foresportia_extract_fixture_names(text)
-                    if fixture_names is None:
-                        failed_count += 1
-                        continue
-
-                    source_home, source_away = fixture_names
-                    kickoff = self._foresportia_extract_scheduled_kickoff(text)
-                    if kickoff is None:
-                        failed_count += 1
-                        continue
-
-                    if kickoff.astimezone(eat_tz).date() != today_eat:
-                        skipped_count += 1
-                        continue
-
-                    probabilities = self._foresportia_extract_probabilities(
-                        text, source_home, source_away
-                    )
-                    if probabilities is None:
-                        failed_count += 1
-                        continue
-
-                    selection = self._foresportia_probability_to_selection(probabilities)
-                    if selection is None:
-                        skipped_count += 1
-                        continue
-
-                    canonical_home = self._foresportia_canonical_team_name(source_home)
-                    canonical_away = self._foresportia_canonical_team_name(source_away)
-
-                    result = self.log_prediction_qa(
-                        "Foresportia",
-                        canonical_home,
-                        canonical_away,
-                        selection,
-                    )
-                    if result is None:
-                        failed_count += 1
-                        continue
-
-                    if result["matched_existing_fixture"]:
-                        matched_count += 1
-                    else:
-                        new_count += 1
-                    valid_count += 1
-
-                except Exception as exc:
-                    failed_count += 1
-                    print(f"Foresportia: failed to process {link}: {exc}")
-
-            self.diagnostics["Foresportia_Detail"] = (
-                f"📊 Discovered: {len(all_links)} | "
-                f"Candidates: {len(candidates)} | "
-                f"Today predictions: {valid_count} | "
-                f"Matched existing fixtures: {matched_count} | "
-                f"New/unmatched fixtures: {new_count} | "
-                f"Skipped: {skipped_count} | Failed: {failed_count}"
-            )
-
-            if valid_count > 0:
-                self.diagnostics["Foresportia"] = (
-                    f"🟢 OK ({valid_count} Today | {matched_count} Matched | "
-                    f"{new_count} New | {skipped_count} Skipped | {failed_count} Failed)"
-                )
-            elif failed_count > 0:
-                self.diagnostics["Foresportia"] = (
-                    f"🔴 FAILED ({failed_count} page/discovery failures)"
-                )
-            else:
-                self.diagnostics["Foresportia"] = (
-                    f"🟡 NO USABLE PREDICTIONS ({skipped_count} Skipped)"
-                )
-
-        except Exception as exc:
-            self.diagnostics["Foresportia"] = f"🔴 FAILED ({exc})"
-            self.diagnostics["Foresportia_Detail"] = (
-                f"📊 Discovery failed: {type(exc).__name__}: {exc}"
-            )
-
-
     def fetch_and_scrape_sync(self, site_name, cfg):
         if site_name == "Golsinyali":
             self.fetch_golsinyali_sync()
@@ -1711,10 +1332,6 @@ class ConsensusEngine:
 
         if site_name == "SoccerAiTips":
             self.fetch_socceraitips_sync()
-            return
-
-        if site_name == "Foresportia":
-            self.fetch_foresportia_sync()
             return
 
         max_attempts = 3
@@ -1912,7 +1529,6 @@ class ConsensusEngine:
         all_scrapers = [
             "Golsinyali",
             "Expected90",
-            "Foresportia",
             "Statarea",
             "Vitibet",
             "PredictZ",
@@ -2263,7 +1879,7 @@ class ConsensusEngine:
                         c,
                     )
                     for n, c in self.configs.items()
-                    if n not in {"Golsinyali", "Expected90", "Foresportia"}
+                    if n not in {"Golsinyali", "Expected90"}
                 ]
                 base_tasks.append(
                     loop.run_in_executor(
@@ -2297,14 +1913,6 @@ class ConsensusEngine:
                         self.fetch_and_scrape_sync,
                         "SoccerAiTips",
                         self.configs["SoccerAiTips"],
-                    )
-
-                if "Foresportia" in self.configs:
-                    await loop.run_in_executor(
-                        pool,
-                        self.fetch_and_scrape_sync,
-                        "Foresportia",
-                        self.configs["Foresportia"],
                     )
 
             agreed_matches, structured_tickets, ai_input_data, req_threshold = self.process_consensus_signals()
