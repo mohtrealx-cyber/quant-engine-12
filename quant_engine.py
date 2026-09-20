@@ -9,6 +9,7 @@ import requests
 from bs4 import BeautifulSoup
 import concurrent.futures
 from curl_cffi import requests as tls_requests
+from zoneinfo import ZoneInfo
 
 # ==============================================================================
 # CONFIGURATION & SECURE ROUTING FALLBACKS
@@ -1367,9 +1368,7 @@ class ConsensusEngine:
         return target_compact == candidate_compact or target_compact in candidate_compact or candidate_compact in target_compact
 
     def _fetch_foresportia_html(self, url, timeout=60):
-        if not SCRAPER_API_KEY:
-            raise RuntimeError("SCRAPER_API_KEY is not configured.")
-
+        """Fetch Foresportia directly first, then fall back to ScraperAPI."""
         headers = {
             "User-Agent": self.FORESPORTIA_USER_AGENT,
             "Accept": (
@@ -1380,26 +1379,58 @@ class ConsensusEngine:
             "Referer": self.FORESPORTIA_DISCOVERY_URL,
         }
 
-        response = requests.get(
-            "https://api.scraperapi.com/",
-            params={
-                "api_key": SCRAPER_API_KEY,
-                "url": url,
-                "premium": "true",
-                "country_code": "us",
-            },
-            headers=headers,
-            timeout=timeout,
-        )
-        if response.status_code != 200:
-            raise RuntimeError(
-                f"Foresportia returned HTTP {response.status_code}"
-            )
+        direct_error = None
 
-        html = response.text
-        if not html.strip():
-            raise RuntimeError("Foresportia returned an empty response.")
-        return html
+        # Route 1: direct TLS/browser-like request.
+        # Foresportia's public pages are directly reachable, and this avoids
+        # turning a transient ScraperAPI 5xx into a source failure.
+        try:
+            response = tls_requests.get(
+                url,
+                impersonate="chrome124",
+                headers=headers,
+                timeout=30,
+                allow_redirects=True,
+            )
+            if response.status_code == 200 and response.text.strip():
+                self.diagnostics["Foresportia_Request_Route"] = "🟢 DIRECT"
+                return response.text
+            direct_error = f"HTTP {response.status_code}"
+        except Exception as exc:
+            direct_error = f"{type(exc).__name__}: {exc}"
+
+        # Route 2: ScraperAPI fallback.
+        if SCRAPER_API_KEY:
+            try:
+                response = requests.get(
+                    "https://api.scraperapi.com/",
+                    params={
+                        "api_key": SCRAPER_API_KEY,
+                        "url": url,
+                        "premium": "true",
+                        "country_code": "us",
+                    },
+                    headers=headers,
+                    timeout=timeout,
+                )
+
+                if response.status_code == 200 and response.text.strip():
+                    self.diagnostics["Foresportia_Request_Route"] = "🟢 SCRAPERAPI FALLBACK"
+                    return response.text
+
+                raise RuntimeError(
+                    f"HTTP {response.status_code}"
+                )
+            except Exception as exc:
+                raise RuntimeError(
+                    f"Foresportia request failed. "
+                    f"Direct={direct_error}; ScraperAPI={type(exc).__name__}: {exc}"
+                ) from exc
+
+        raise RuntimeError(
+            f"Foresportia direct request failed: {direct_error}; "
+            "SCRAPER_API_KEY is not configured for fallback."
+        )
 
     @staticmethod
     def _foresportia_page_text(html):
@@ -1511,7 +1542,7 @@ class ConsensusEngine:
         # The reference adapter uses Europe/Paris. We approximate its current
         # CET offset here; fixture date validation is performed after conversion.
         source_datetime = parsed.replace(
-            tzinfo=datetime.timezone(datetime.timedelta(hours=1))
+            tzinfo=ZoneInfo("Europe/Paris")
         )
         return source_datetime.astimezone(datetime.timezone.utc)
 
