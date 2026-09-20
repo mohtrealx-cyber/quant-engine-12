@@ -1360,30 +1360,52 @@ class ConsensusEngine:
 
     @classmethod
     def _betiball_extract_fixture_names(cls, text):
+        # Betiball's current match-page heading is:
+        #   "Home vs Away - Prediction & Odds"
+        # Older pages/tests may omit "- & Odds" or use the compact
+        # "Home - Away 1 X 2" form, so support both variants.
         patterns = [
             re.compile(
-                r"(?P<home>[A-Za-z0-9][A-Za-z0-9 .&'’-]+?)\s+vs\s+"
-                r"(?P<away>[A-Za-z0-9][A-Za-z0-9 .&'’-]+?)\s+Prediction",
+                r"(?P<home>[A-Za-z0-9][A-Za-z0-9 .&'’()/-]*?)\s+vs\s+"
+                r"(?P<away>[A-Za-z0-9][A-Za-z0-9 .&'’()/-]*?)\s*-\s*"
+                r"Prediction(?:\s*&\s*Odds)?\b",
                 re.IGNORECASE,
             ),
             re.compile(
-                r"(?P<home>[A-Za-z0-9][A-Za-z0-9 .&'’-]+?)\s+-\s+"
-                r"(?P<away>[A-Za-z0-9][A-Za-z0-9 .&'’-]+?)\s+1\s+X\s+2",
+                r"(?P<home>[A-Za-z0-9][A-Za-z0-9 .&'’()/-]*?)\s+vs\s+"
+                r"(?P<away>[A-Za-z0-9][A-Za-z0-9 .&'’()/-]*?)\s+Prediction\b",
+                re.IGNORECASE,
+            ),
+            re.compile(
+                r"(?P<home>[A-Za-z0-9][A-Za-z0-9 .&'’()/-]*?)\s+-\s+"
+                r"(?P<away>[A-Za-z0-9][A-Za-z0-9 .&'’()/-]*?)\s+1\s+X\s+2",
                 re.IGNORECASE,
             ),
         ]
+
         for pattern in patterns:
             match = pattern.search(text or "")
             if not match:
                 continue
-            home = " ".join(match.group("home").split()).strip()
-            away = " ".join(match.group("away").split()).strip()
+
+            home = " ".join(match.group("home").split()).strip(" -")
+            away = " ".join(match.group("away").split()).strip(" -")
+
             if home and away:
-                home = re.sub(r"(?i)\b(match preview|preview|results?)\b", "", home)
-                away = re.sub(r"(?i)\b(match preview|preview|results?)\b", "", away)
+                home = re.sub(
+                    r"(?i)\b(match preview|preview|results?)\b",
+                    "",
+                    home,
+                )
+                away = re.sub(
+                    r"(?i)\b(match preview|preview|results?)\b",
+                    "",
+                    away,
+                )
                 home = re.sub(r"\s+", " ", home).strip().title()
                 away = re.sub(r"\s+", " ", away).strip().title()
                 return home, away
+
         return None
 
     @classmethod
@@ -1543,33 +1565,38 @@ class ConsensusEngine:
     @classmethod
     def _betiball_parse_match(cls, html, target_match):
         text = cls._betiball_page_text(html)
+
         names = cls._betiball_extract_fixture_names(text)
         if not names:
-            return None
+            return None, "fixture_names"
+
         home, away = names
         try:
             target_home, target_away = [
                 part.strip() for part in target_match.split(" vs ", 1)
             ]
         except ValueError:
-            return None
+            return None, "target_fixture"
+
         if cls._betiball_slugify_team(home) != cls._betiball_slugify_team(target_home):
-            return None
+            return None, "home_mismatch"
+
         if cls._betiball_slugify_team(away) != cls._betiball_slugify_team(target_away):
-            return None
+            return None, "away_mismatch"
 
         source_date = cls._betiball_extract_scheduled_date(text)
         if source_date and source_date != cls._betiball_target_date():
-            return None
+            return None, "date_mismatch"
 
         probs = cls._betiball_extract_probabilities(text, home, away)
         if not probs:
-            return None
+            return None, "probabilities"
 
         selection = cls._betiball_probability_to_selection(probs)
         if not selection:
-            return None
-        return selection, probs
+            return None, "selection"
+
+        return (selection, probs), "ok"
 
     def fetch_betiball_sync(self):
         discovered = 0
@@ -1616,12 +1643,15 @@ class ConsensusEngine:
             discovered = len(seen_pairs)
             candidates = min(len(all_candidates), self.BETIBALL_MAX_MATCH_PAGES)
 
+            reject_reasons = {}
+
             for match_key, link in all_candidates[:self.BETIBALL_MAX_MATCH_PAGES]:
                 try:
                     html = self._betiball_fetch_html(link)
-                    parsed = self._betiball_parse_match(html, match_key)
+                    parsed, reason = self._betiball_parse_match(html, match_key)
                     if not parsed:
                         skipped += 1
+                        reject_reasons[reason] = reject_reasons.get(reason, 0) + 1
                         continue
 
                     selection, _probabilities = parsed
@@ -1631,6 +1661,7 @@ class ConsensusEngine:
                     )
                     if not info:
                         skipped += 1
+                        reject_reasons["matrix_rejected"] = reject_reasons.get("matrix_rejected", 0) + 1
                         continue
 
                     if info["matched_existing_fixture"]:
@@ -1641,11 +1672,17 @@ class ConsensusEngine:
                     failed += 1
                     print(f"Betiball: failed to process {link}: {exc}")
 
+            reason_text = ", ".join(
+                f"{key}={value}"
+                for key, value in sorted(reject_reasons.items())
+            ) or "none"
+
             self.diagnostics["Betiball_Detail"] = (
                 f"📊 Candidate matches: {len(all_candidates)} | "
                 f"Pages selected: {candidates} | Predictions: {matched + new_count} | "
                 f"Matched existing fixtures: {matched} | New/unmatched fixtures: {new_count} | "
-                f"Skipped: {skipped} | Failed: {failed}"
+                f"Skipped: {skipped} | Failed: {failed} | "
+                f"Reject reasons: {reason_text}"
             )
 
             total_valid = matched + new_count
