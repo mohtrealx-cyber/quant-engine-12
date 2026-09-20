@@ -37,6 +37,11 @@ def get_dynamic_configs():
             "fallback_url": None,
             "use_scraperapi": False
         },
+        "SoccerAiTips": {
+            "url": "https://www.socceraitips.com/api/daily-parlay",
+            "fallback_url": None,
+            "use_scraperapi": False
+        },
         "Statarea": {
             "url": f"https://www.statarea.com/predictions/date/{today_date}/",
             "fallback_url": None,
@@ -88,8 +93,9 @@ class ConsensusEngine:
     def __init__(self, configs):
         self.configs = configs
         self.master_matrix = {}
-        self.corner_stats = {} 
+        self.corner_stats = {}
         self.diagnostics = {}
+        self.secondary_market_data = []
 
         # Dedicated browser-like session for Golsinyali.
         # This reduces false blocks from basic Python HTTP fingerprints.
@@ -1054,6 +1060,267 @@ class ConsensusEngine:
         except Exception as exc:
             self.diagnostics["Expected90"] = f"🔴 FAILED ({exc})"
 
+    # ======================================================================
+    # SOCCERAITIPS DEDICATED ADAPTER (SECONDARY MARKETS)
+    # ======================================================================
+
+    SOCCERAITIPS_BASE_URL = "https://www.socceraitips.com"
+    SOCCERAITIPS_DAILY_PARLAY_PATH = "/api/daily-parlay"
+    SOCCERAITIPS_REQUEST_TIMEOUT = 30
+    SOCCERAITIPS_USER_AGENT = (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/140.0.0.0 Safari/537.36"
+    )
+
+    @staticmethod
+    def _socceraitips_parse_display_time(value):
+        if not isinstance(value, str):
+            return None
+        value = value.strip()
+        if not value:
+            return None
+        try:
+            datetime.datetime.strptime(value, "%H:%M")
+        except ValueError:
+            return None
+        return value
+
+    @staticmethod
+    def _socceraitips_parse_utc_datetime(value):
+        if not isinstance(value, str):
+            return None
+        value = value.strip()
+        if not value:
+            return None
+
+        formats = (
+            "%m/%d/%Y %I:%M:%S %p",
+            "%m/%d/%Y %I:%M %p",
+            "%Y-%m-%d %H:%M:%S",
+            "%Y-%m-%d %H:%M",
+        )
+
+        for fmt in formats:
+            try:
+                parsed = datetime.datetime.strptime(value, fmt)
+                return parsed.replace(tzinfo=datetime.timezone.utc)
+            except ValueError:
+                continue
+
+        try:
+            parsed = datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
+            if parsed.tzinfo is None:
+                parsed = parsed.replace(tzinfo=datetime.timezone.utc)
+            return parsed.astimezone(datetime.timezone.utc)
+        except ValueError:
+            return None
+
+    @staticmethod
+    def _socceraitips_normalize_market(bet_type, prediction_display):
+        normalized_bet_type = bet_type.strip().lower() if isinstance(bet_type, str) else ""
+        normalized_display = prediction_display.strip().upper() if isinstance(prediction_display, str) else ""
+
+        if normalized_bet_type == "over_2_5" and (
+            normalized_display == "OVER 2.5"
+        ):
+            return "OVER_2.5"
+
+        if normalized_bet_type in {"kg_var", "btts"} and normalized_display == "BTTS":
+            return "BTTS"
+
+        return None
+
+    @staticmethod
+    def _socceraitips_normalize_selection(bet_type, prediction, prediction_display):
+        normalized_bet_type = bet_type.strip().lower() if isinstance(bet_type, str) else ""
+        normalized_prediction = prediction.strip().upper() if isinstance(prediction, str) else ""
+        normalized_display = prediction_display.strip().upper() if isinstance(prediction_display, str) else ""
+
+        if normalized_bet_type == "over_2_5":
+            if normalized_prediction == "ÜST" or normalized_display == "OVER 2.5":
+                return "OVER_2.5"
+            return None
+
+        if normalized_bet_type in {"kg_var", "btts"}:
+            if normalized_prediction == "VAR" or normalized_display == "BTTS":
+                return "BTTS_YES"
+            return None
+
+        return None
+
+    def _socceraitips_find_existing_match(self, home, away):
+        raw_key = f"{self.clean_team_name(home)} vs {self.clean_team_name(away)}"
+        best_key = raw_key
+        best_ratio = 0.0
+
+        for existing_key in self.master_matrix.keys():
+            ratio = difflib.SequenceMatcher(
+                None,
+                raw_key.lower(),
+                existing_key.lower(),
+            ).ratio()
+            if ratio > best_ratio:
+                best_ratio = ratio
+                best_key = existing_key
+
+        if best_ratio >= 0.75:
+            return best_key, True
+        return raw_key, False
+
+    def fetch_socceraitips_sync(self):
+        """
+        Fetch SoccerAiTips daily-parlay data.
+
+        SoccerAiTips' current adapter exposes secondary markets (BTTS and
+        Over 2.5) rather than a canonical 1X2 prediction. Therefore these
+        records are intentionally NOT added to the 1X2 consensus matrix.
+        They are retained as secondary-market evidence for diagnostics and
+        Gemini optimization.
+        """
+        try:
+            url = f"{self.SOCCERAITIPS_BASE_URL}{self.SOCCERAITIPS_DAILY_PARLAY_PATH}"
+            response = requests.get(
+                url,
+                params={"locale": "en"},
+                headers={
+                    "User-Agent": self.SOCCERAITIPS_USER_AGENT,
+                    "Accept": "application/json,text/plain,*/*",
+                    "Accept-Language": "en-US,en;q=0.9",
+                    "Referer": f"{self.SOCCERAITIPS_BASE_URL}/en",
+                    "Origin": self.SOCCERAITIPS_BASE_URL,
+                },
+                timeout=self.SOCCERAITIPS_REQUEST_TIMEOUT,
+            )
+            response.raise_for_status()
+
+            if not response.text.strip():
+                raise ValueError("Empty response received from SoccerAiTips.")
+
+            payload = response.json()
+            if not isinstance(payload, dict):
+                raise ValueError("Unexpected SoccerAiTips response structure.")
+            if payload.get("success") is not True:
+                raise ValueError("SoccerAiTips returned an unsuccessful response.")
+
+            data = payload.get("data")
+            if not isinstance(data, dict):
+                raise ValueError("SoccerAiTips response does not contain a valid data object.")
+
+            matches = data.get("matches")
+            if not isinstance(matches, list):
+                raise ValueError("SoccerAiTips response does not contain a valid matches list.")
+
+            eat_tz = datetime.timezone(datetime.timedelta(hours=3))
+            now_utc = datetime.datetime.now(datetime.timezone.utc)
+            today_eat = now_utc.astimezone(eat_tz).date()
+
+            valid_count = 0
+            matched_count = 0
+            new_count = 0
+            skipped_count = 0
+            failed_count = 0
+            secondary_records = []
+
+            for match in matches:
+                if not isinstance(match, dict):
+                    skipped_count += 1
+                    continue
+
+                home = match.get("home_team")
+                away = match.get("away_team")
+                match_time = match.get("match_time")
+                match_time_utc = match.get("match_time_utc")
+                bet_type = match.get("bet_type")
+                prediction = match.get("prediction")
+                prediction_display = match.get("prediction_display")
+
+                if not all(isinstance(value, str) and value.strip() for value in [home, away, bet_type, prediction, prediction_display]):
+                    failed_count += 1
+                    continue
+
+                kickoff = self._socceraitips_parse_utc_datetime(match_time_utc)
+                if kickoff is None:
+                    failed_count += 1
+                    continue
+
+                kickoff_eat = kickoff.astimezone(eat_tz)
+                if kickoff_eat.date() != today_eat or kickoff <= now_utc:
+                    skipped_count += 1
+                    continue
+
+                market = self._socceraitips_normalize_market(
+                    bet_type,
+                    prediction_display,
+                )
+                selection = self._socceraitips_normalize_selection(
+                    bet_type,
+                    prediction,
+                    prediction_display,
+                )
+
+                if market is None or selection is None:
+                    skipped_count += 1
+                    continue
+
+                match_key, matched_existing = self._socceraitips_find_existing_match(
+                    home,
+                    away,
+                )
+
+                record = {
+                    "source": "SoccerAiTips",
+                    "match": match_key,
+                    "home_team": self.clean_team_name(home),
+                    "away_team": self.clean_team_name(away),
+                    "kickoff": kickoff.isoformat(),
+                    "display_time": self._socceraitips_parse_display_time(match_time),
+                    "market": market,
+                    "selection": selection,
+                    "bet_type": bet_type,
+                    "prediction": prediction,
+                    "prediction_display": prediction_display,
+                    "confidence": match.get("confidence"),
+                    "league": match.get("league"),
+                    "matched_existing_fixture": matched_existing,
+                }
+
+                secondary_records.append(record)
+                valid_count += 1
+
+                if matched_existing:
+                    matched_count += 1
+                else:
+                    new_count += 1
+
+            self.secondary_market_data.extend(secondary_records)
+            self.diagnostics["SoccerAiTips_Detail"] = (
+                f"📊 Discovered: {len(matches)} | "
+                f"Today markets: {valid_count} | "
+                f"Matched existing fixtures: {matched_count} | "
+                f"New/unmatched fixtures: {new_count} | "
+                f"Skipped: {skipped_count} | Failed: {failed_count}"
+            )
+
+            if valid_count > 0:
+                self.diagnostics["SoccerAiTips"] = (
+                    f"🟢 OK ({valid_count} Secondary Markets | "
+                    f"{matched_count} Matched | {new_count} New | "
+                    f"{skipped_count} Skipped | {failed_count} Failed)"
+                )
+            elif failed_count > 0:
+                self.diagnostics["SoccerAiTips"] = (
+                    f"🔴 FAILED ({failed_count} Invalid/failed records)"
+                )
+            else:
+                self.diagnostics["SoccerAiTips"] = (
+                    f"🟡 NO USABLE SECONDARY MARKETS ({skipped_count} Skipped)"
+                )
+
+        except Exception as exc:
+            self.diagnostics["SoccerAiTips"] = f"🔴 FAILED ({exc})"
+            self.diagnostics["SoccerAiTips_Detail"] = "No secondary-market data collected."
+
     def fetch_and_scrape_sync(self, site_name, cfg):
         if site_name == "Golsinyali":
             self.fetch_golsinyali_sync()
@@ -1061,6 +1328,10 @@ class ConsensusEngine:
 
         if site_name == "Expected90":
             self.fetch_expected90_sync()
+            return
+
+        if site_name == "SoccerAiTips":
+            self.fetch_socceraitips_sync()
             return
 
         max_attempts = 3
@@ -1341,13 +1612,14 @@ class ConsensusEngine:
             pass
         return ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-flash-latest"]
 
-    def ask_llm_to_optimize_tickets(self, ai_input_data, active_corner_teams):
+    def ask_llm_to_optimize_tickets(self, ai_input_data, active_corner_teams, secondary_market_data=None):
         api_key = (GEMINI_API_KEY or "").strip()
         if not api_key:
             self.diagnostics["AI_Status"] = "🔴 Missing GEMINI_API_KEY"
             return None
 
         models_to_try = self.get_available_gemini_models(api_key)
+        secondary_market_data = secondary_market_data or []
 
         prompt = f"""
         You are Titan, an elite quantitative sports betting AI Portfolio Manager.
@@ -1359,6 +1631,13 @@ class ConsensusEngine:
 
         === HIGH-PROBABILITY CORNER STATISTICS ===
         {json.dumps(active_corner_teams, indent=2)}
+
+        === SECONDARY MARKET SIGNALS (SOCCERAITIPS) ===
+        {json.dumps(secondary_market_data, indent=2)}
+
+        NOTE: SoccerAiTips currently supplies BTTS / Over 2.5 markets, not
+        canonical 1X2 picks. Do NOT count these signals as 1X2 consensus votes.
+        They may be used as supporting secondary-market evidence when relevant.
 
         STRICT ARCHITECTURE RULES:
         1. NEVER repeat the same match across multiple tickets or reserve slots. Every match used (whether main or reserve) must be completely unique across your entire output.
@@ -1628,6 +1907,14 @@ class ConsensusEngine:
                         self.configs["Expected90"],
                     )
 
+                if "SoccerAiTips" in self.configs:
+                    await loop.run_in_executor(
+                        pool,
+                        self.fetch_and_scrape_sync,
+                        "SoccerAiTips",
+                        self.configs["SoccerAiTips"],
+                    )
+
             agreed_matches, structured_tickets, ai_input_data, req_threshold = self.process_consensus_signals()
 
             active_corner_teams = []
@@ -1641,8 +1928,12 @@ class ConsensusEngine:
                         active_corner_teams.append({"match": match, "team": a, "avg_corners": self.corner_stats[a]})
 
             ai_optimized_message = None
-            if ai_input_data or active_corner_teams:
-                ai_optimized_message = self.ask_llm_to_optimize_tickets(ai_input_data, active_corner_teams)
+            if ai_input_data or active_corner_teams or self.secondary_market_data:
+                ai_optimized_message = self.ask_llm_to_optimize_tickets(
+                    ai_input_data,
+                    active_corner_teams,
+                    self.secondary_market_data,
+                )
 
             # Strict Lock Enforced here
             should_lock = (current_hour >= 5) and (ai_optimized_message is not None or not ai_input_data)
@@ -1682,6 +1973,19 @@ class ConsensusEngine:
                 print(f"• {match} -> {sources}")
         else:
             print("No matches entered the consensus matrix.")
+        print("==========================================\n")
+
+        print("==========================================")
+        print(f"SECONDARY MARKET SIGNALS: {len(self.secondary_market_data)}")
+        if self.secondary_market_data:
+            for record in self.secondary_market_data:
+                print(
+                    f"• {record['match']} -> "
+                    f"{record['market']}={record['selection']} "
+                    f"({record.get('display_time') or 'time n/a'})"
+                )
+        else:
+            print("No SoccerAiTips secondary-market signals collected.")
         print("==========================================\n")
 
         # Only send the Telegram alert if we actually scraped fresh data OR if we settled a ticket.
