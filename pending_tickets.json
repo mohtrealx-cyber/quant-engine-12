@@ -185,5 +185,79 @@
                 "score": "-"
             }
         ]
+    },
+    "2026-09-21": {
+        "locked": true,
+        "agreed_matches": [
+            "\u2022 **Petrolul Ploie\u0219ti vs Csikszereda** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + Statarea + WinDrawWin + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Dolomiti Bellunesi vs Lumezzane** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + WinDrawWin + SoccerVista + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26a0\ufe0f PredictZ backed: X\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Trento vs Pro Vercelli** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + Statarea + WinDrawWin + PredictZ + SoccerVista + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Treviso vs Desenzano Calvina** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + Statarea + SoccerVista + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26a0\ufe0f PredictZ backed: X\n  \u21b3 \u26a0\ufe0f WinDrawWin backed: 2\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Pianese vs Sambenedettese** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + PredictZ + SoccerVista + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26a0\ufe0f WinDrawWin backed: 2\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Spezia vs Vis Pesaro 1898** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + Statarea + WinDrawWin + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n"
+        ],
+        "core_matches_4plus": [
+            "\u2022 **Petrolul Ploie\u0219ti vs Csikszereda** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + Statarea + WinDrawWin + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Dolomiti Bellunesi vs Lumezzane** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + WinDrawWin + SoccerVista + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26a0\ufe0f PredictZ backed: X\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Trento vs Pro Vercelli** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + Statarea + WinDrawWin + PredictZ + SoccerVista + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Treviso vs Desenzano Calvina** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + Statarea + SoccerVista + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26a0\ufe0f PredictZ backed: X\n  \u21b3 \u26a0\ufe0f WinDrawWin backed: 2\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Pianese vs Sambenedettese** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + PredictZ + SoccerVista + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26a0\ufe0f WinDrawWin backed: 2\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Spezia vs Vis Pesaro 1898** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + Statarea + WinDrawWin + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n"
+        ],
+        "fallback_matches_3plus": [
+            "\u2022 **Aldosivi vs Atletico Tucuman** \u2794 2\n  \u21b3 \u2705 Backed by: `WinDrawWin + PredictZ + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26a0\ufe0f Vitibet backed: X\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Tristan Suarez vs Atlanta** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + WinDrawWin + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Tsc Backa Topola vs Dubo\u010dica** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + WinDrawWin + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Ofk Vr\u0161ac vs Ofk Bor 1919** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + WinDrawWin + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Viktoriya Mykolaivka vs Nyva Ternopil** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + WinDrawWin + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Paderborn Ii vs B. Dortmund Ii** \u2794 2\n  \u21b3 \u2705 Backed by: `Vitibet + WinDrawWin + SoccerVista`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26a0\ufe0f PredictZ backed: X\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **N\u00f5mme Kalju Ii vs N\u00f5mme United Ii** \u2794 2\n  \u21b3 \u2705 Backed by: `Vitibet + WinDrawWin + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Xorazm vs Qizilqum Zarafshon** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + PredictZ + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26a0\ufe0f WinDrawWin backed: X\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Thimphu vs Ugyen Academy** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + SoccerVista + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa PredictZ: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Toluca vs Santos Laguna** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Golsinyali + NVtips`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Vitibet: Not Listed\n  \u21b3 \u26aa PredictZ: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
+            "\u2022 **Pachuca vs Club Tijuana** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Golsinyali + NVtips`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Vitibet: Not Listed\n  \u21b3 \u26aa PredictZ: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n"
+        ],
+        "fallback_active": true,
+        "ai_optimized_message": "\ud83d\udee1\ufe0f Ticket 1: Ironclad (40% of Daily Stake)\n\u2022 Trento vs Pro Vercelli \u2794 1\n\u2022 Spezia vs Vis Pesaro 1898 \u2794 1\n\u2022 Petrolul Ploie\u0219ti vs Csikszereda \u2794 1\n\u21b3 Reserve: N\u00f5mme Kalju Ii vs N\u00f5mme United Ii \u2794 2\n\n\u2696\ufe0f Ticket 2: Balanced (10% of Daily Stake)\n\u2022 Treviso vs Desenzano Calvina \u2794 1X\n\u2022 Tristan Suarez vs Atlanta \u2794 1\n\u2022 Ofk Vr\u0161ac vs Ofk Bor 1919 \u2794 1\n\u21b3 Reserve: Thimphu vs Ugyen Academy \u2794 1\n\n\ud83c\udfaf Ticket 3: Volatility (10% of Daily Stake)\n\u2022 Toluca vs Santos Laguna \u2794 1\n\u2022 Pachuca vs Club Tijuana \u2794 1\n\u2022 Viktoriya Mykolaivka vs Nyva Ternopil \u2794 1\n\u21b3 Reserve: Paderborn Ii vs B. Dortmund Ii \u2794 X2\n\n\ud83e\uddea Ticket 4: Custom Tickets (40% of Daily Stake)\n\u2022 Dolomiti Bellunesi vs Lumezzane \u2794 1X\n\u2022 Pianese vs Sambenedettese \u2794 1X\n\u2022 Tsc Backa Topola vs Dubo\u010dica \u2794 1\n\u21b3 Reserve: Xorazm vs Qizilqum Zarafshon \u2794 1X",
+        "req_threshold": 4,
+        "fallback_threshold": 3,
+        "tickets": [
+            {
+                "match": "Petrolul Ploie\u0219ti vs Csikszereda",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Dolomiti Bellunesi vs Lumezzane",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Trento vs Pro Vercelli",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Treviso vs Desenzano Calvina",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Pianese vs Sambenedettese",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Spezia vs Vis Pesaro 1898",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            }
+        ]
     }
 }
