@@ -285,5 +285,104 @@
         "req_threshold": 4,
         "fallback_threshold": 3,
         "tickets": []
+    },
+    "2026-09-23": {
+        "locked": true,
+        "agreed_matches": [
+            "\u2022 **Barcelona W vs Paris Fc W** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + Statarea + SoccerVista + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa PredictZ: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Bregalnica \u0160tip vs Skopje** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + WinDrawWin + SoccerVista + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa PredictZ: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Barau Fc vs Abia Warriors Fc** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + WinDrawWin + Statarea + PredictZ + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Enyimba vs Sporting Lagos** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + WinDrawWin + Statarea + PredictZ + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Enugu Rangers vs Ranchers Bees** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + WinDrawWin + Statarea + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Shooting Stars Sc vs Katsina United Fc** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + WinDrawWin + Statarea + PredictZ + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Birmingham Legion Fc vs Brooklyn** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + WinDrawWin + PredictZ + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Azerbaijan vs Tajikistan** \u2794 1\n  \u21b3 \u2705 Backed by: `WinDrawWin + Statarea + PredictZ + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Vitibet: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Gibraltar vs Sao Tome And Principe** \u2794 1\n  \u21b3 \u2705 Backed by: `WinDrawWin + Statarea + PredictZ + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Vitibet: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Hamilton vs Cowdenbeath** \u2794 1\n  \u21b3 \u2705 Backed by: `WinDrawWin + Statarea + PredictZ + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Vitibet: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n"
+        ],
+        "core_matches_4plus": [
+            "\u2022 **Barcelona W vs Paris Fc W** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + Statarea + SoccerVista + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa PredictZ: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Bregalnica \u0160tip vs Skopje** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + WinDrawWin + SoccerVista + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa PredictZ: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Barau Fc vs Abia Warriors Fc** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + WinDrawWin + Statarea + PredictZ + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Enyimba vs Sporting Lagos** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + WinDrawWin + Statarea + PredictZ + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Enugu Rangers vs Ranchers Bees** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + WinDrawWin + Statarea + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Shooting Stars Sc vs Katsina United Fc** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + WinDrawWin + Statarea + PredictZ + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Birmingham Legion Fc vs Brooklyn** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + WinDrawWin + PredictZ + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Azerbaijan vs Tajikistan** \u2794 1\n  \u21b3 \u2705 Backed by: `WinDrawWin + Statarea + PredictZ + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Vitibet: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Gibraltar vs Sao Tome And Principe** \u2794 1\n  \u21b3 \u2705 Backed by: `WinDrawWin + Statarea + PredictZ + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Vitibet: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Hamilton vs Cowdenbeath** \u2794 1\n  \u21b3 \u2705 Backed by: `WinDrawWin + Statarea + PredictZ + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Vitibet: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n"
+        ],
+        "fallback_matches_3plus": [
+            "\u2022 **Thimphu City vs Transport United** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + SoccerVista + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa PredictZ: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Bendel Insurance vs Ikorodu City** \u2794 1\n  \u21b3 \u2705 Backed by: `WinDrawWin + PredictZ + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa Vitibet: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Doma United vs Plateau United** \u2794 1\n  \u21b3 \u2705 Backed by: `WinDrawWin + PredictZ + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa Vitibet: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Kwara United vs Nasarawa United** \u2794 1\n  \u21b3 \u2705 Backed by: `WinDrawWin + PredictZ + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa Vitibet: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n"
+        ],
+        "fallback_active": true,
+        "ai_optimized_message": "\ud83d\udee1\ufe0f Ticket 1: Ironclad (40% of Daily Stake)\n\u2022 Barau Fc vs Abia Warriors Fc \u2794 1\n\u2022 Enyimba vs Sporting Lagos \u2794 1\n\u2022 Shooting Stars Sc vs Katsina United Fc \u2794 1\n\u21b3 Reserve: Bendel Insurance vs Ikorodu City \u2794 1\n\n\u2696\ufe0f Ticket 2: Balanced (10% of Daily Stake)\n\u2022 Barcelona W vs Paris Fc W \u2794 1\n\u2022 Bregalnica \u0160tip vs Skopje \u2794 1\n\u2022 Hamilton vs Cowdenbeath \u2794 1\n\u21b3 Reserve: Doma United vs Plateau United \u2794 Over 2.5 Goals\n\n\ud83c\udfaf Ticket 3: Volatility (10% of Daily Stake)\n\u2022 Gibraltar vs Sao Tome And Principe \u2794 1\n\u2022 Azerbaijan vs Tajikistan \u2794 1\n\u2022 Birmingham Legion Fc vs Brooklyn \u2794 1\n\u21b3 Reserve: Kwara United vs Nasarawa United \u2794 1\n\n\ud83e\uddea Ticket 4: Custom Tickets (40% of Daily Stake)\n\u2022 Barau Fc vs Abia Warriors Fc \u2794 1\n\u2022 Enyimba vs Sporting Lagos \u2794 1\n\u2022 Enugu Rangers vs Ranchers Bees \u2794 1\n\u21b3 Reserve: Thimphu City vs Transport United \u2794 1",
+        "req_threshold": 4,
+        "fallback_threshold": 3,
+        "tickets": [
+            {
+                "match": "Barcelona W vs Paris Fc W",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Bregalnica \u0160tip vs Skopje",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Barau Fc vs Abia Warriors Fc",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Enyimba vs Sporting Lagos",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Enugu Rangers vs Ranchers Bees",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Shooting Stars Sc vs Katsina United Fc",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Birmingham Legion Fc vs Brooklyn",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Azerbaijan vs Tajikistan",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Gibraltar vs Sao Tome And Principe",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Hamilton vs Cowdenbeath",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            }
+        ]
     }
 }
