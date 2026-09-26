@@ -33,7 +33,7 @@ def get_dynamic_configs():
             "use_scraperapi": False
         },
         "Expected90": {
-            "url": "https://www.90predict.com/football-predictions-today",
+            "url": "https://expected90.com/football-predictions",
             "fallback_url": None,
             "use_scraperapi": False
         },
@@ -66,7 +66,7 @@ def get_dynamic_configs():
             "use_scraperapi": False
         },
         "PredictZ": {
-            "url": "https://www.predictz.com/predictions/today/",
+            "url": "https://www.predictz.com/predictions/",
             "fallback_url": "https://www.predictz.com/predictions/",
             "row_selector": "div", "row_class": "pttr",
             "home_selector": "div", "home_class": "pttmobh", "home_index": 0,
@@ -101,13 +101,16 @@ class ConsensusEngine:
         self.corner_stats = {}
         self.diagnostics = {}
         self.secondary_market_data = []
+
+        # Dedicated browser-like session for Golsinyali.
+        # This reduces false blocks from basic Python HTTP fingerprints.
         self.golsinyali_session = tls_requests.Session(impersonate="chrome124")
 
     def normalize_prediction(self, raw_text):
         text = str(raw_text).strip().lower()
-        if text in ["home", "home win", "h"]: return "1"
-        if text in ["draw", "x", "0", "d"]: return "X"
-        if text in ["away", "away win", "a"]: return "2"
+        if text in ["home", "home win"]: return "1"
+        if text in ["draw", "x", "0"]: return "X"
+        if text in ["away", "away win"]: return "2"
 
         if len(text) > 0:
             char = text[0]
@@ -325,6 +328,7 @@ class ConsensusEngine:
 
         lowered = str(description).lower()
 
+        # Common descriptive forms used by Golsinyali.
         if "home win" in lowered:
             return "HOME"
         if "away win" in lowered:
@@ -332,6 +336,7 @@ class ConsensusEngine:
         if "draw" in lowered:
             return "DRAW"
 
+        # Current/alternate 1X2 labels used on prediction cards.
         if re.search(r"\bms1\b|\bpick\s*:\s*1\b", lowered):
             return "HOME"
         if re.search(r"\bms2\b|\bpick\s*:\s*2\b", lowered):
@@ -413,6 +418,7 @@ class ConsensusEngine:
 
         for attempt in range(1, self.GOLSINYALI_MAX_RETRIES + 1):
             try:
+                # First try curl_cffi with a real Chrome TLS fingerprint.
                 response = self.golsinyali_session.get(
                     url,
                     headers=headers,
@@ -442,6 +448,7 @@ class ConsensusEngine:
                         f"waiting {wait_seconds:.1f}s"
                     )
 
+                    # If ScraperAPI is configured, use it immediately as the fallback.
                     if SCRAPER_API_KEY:
                         proxy_url = (
                             "http://api.scraperapi.com"
@@ -534,6 +541,7 @@ class ConsensusEngine:
         return score
 
     def fetch_golsinyali_sync(self):
+        """Fetch Golsinyali match pages and add normalized predictions to consensus."""
         try:
             predictions_html = self._fetch_golsinyali_html(
                 self.GOLSINYALI_PREDICTIONS_URL
@@ -561,6 +569,9 @@ class ConsensusEngine:
                 )
                 return
 
+            # Prefer links that correspond to fixtures already discovered by the
+            # original five sources. This mirrors the friend's DOMINION adapter
+            # and dramatically reduces unnecessary match-page requests/rate limits.
             scored = []
             for url, anchor_text in anchor_data:
                 score = self._golsinyali_candidate_score(anchor_text, url)
@@ -571,6 +582,7 @@ class ConsensusEngine:
                 scored.sort(key=lambda item: (-item[0], item[1]))
                 candidates = [(url, anchor_text) for _, url, anchor_text in scored]
             else:
+                # Safe fallback when the other sources produced no fixtures.
                 candidates = anchor_data
 
             candidates = candidates[: self.GOLSINYALI_MAX_MATCH_PAGES]
@@ -693,10 +705,10 @@ class ConsensusEngine:
             self.diagnostics["Golsinyali"] = f"🔴 FAILED ({exc})"
 
     # ==========================================================================
-    # EXPECTED90 / 90PREDICT DEDICATED ADAPTER
+    # EXPECTED90 DEDICATED ADAPTER
     # ==========================================================================
-    EXPECTED90_BASE_URL = "https://www.90predict.com"
-    EXPECTED90_PREDICTIONS_URL = f"{EXPECTED90_BASE_URL}/football-predictions-today"
+    EXPECTED90_BASE_URL = "https://expected90.com"
+    EXPECTED90_PREDICTIONS_URL = f"{EXPECTED90_BASE_URL}/football-predictions"
     EXPECTED90_REQUEST_TIMEOUT = 30
     EXPECTED90_MAX_MATCH_PAGES = 60
     EXPECTED90_USER_AGENT = (
@@ -719,32 +731,18 @@ class ConsensusEngine:
         if referer:
             headers["Referer"] = referer
 
-        # Use tls_requests to natively bypass Cloudflare challenges
-        response = tls_requests.get(
+        response = requests.get(
             url,
             headers=headers,
-            impersonate="chrome124",
             timeout=self.EXPECTED90_REQUEST_TIMEOUT,
         )
 
         if response.status_code != 200:
-            if SCRAPER_API_KEY:
-                proxy_url = f"http://api.scraperapi.com?api_key={SCRAPER_API_KEY}&url={url}&premium=true"
-                r = requests.get(proxy_url, headers=headers, timeout=60)
-                if r.status_code == 200:
-                    return r.text
-            raise RuntimeError(f"Expected90 returned HTTP {response.status_code}")
+            raise RuntimeError(
+                f"Expected90 returned HTTP {response.status_code}"
+            )
 
         html = response.text
-        
-        # Additional fallback if Cloudflare returns HTTP 200 but serves a challenge
-        if "just a moment" in html.lower() or "cloudflare" in html.lower():
-            if SCRAPER_API_KEY:
-                proxy_url = f"http://api.scraperapi.com?api_key={SCRAPER_API_KEY}&url={url}&premium=true&render=true"
-                r = requests.get(proxy_url, headers=headers, timeout=60)
-                if r.status_code == 200:
-                    return r.text
-
         if not html.strip():
             raise RuntimeError("Expected90 returned an empty response.")
 
@@ -868,16 +866,19 @@ class ConsensusEngine:
 
         for anchor in soup.find_all("a", href=True):
             href = anchor["href"].strip()
-            
-            # Relaxed regex to ensure we grab the links even if their structure slightly updates
-            if "-vs-" not in href:
+            if not href.startswith("/football-predictions/"):
                 continue
 
-            if href.startswith("http"):
-                url = href
-            else:
-                url = f"{self.EXPECTED90_BASE_URL}{href if href.startswith('/') else '/' + href}"
+            # Expected90 individual match URLs are:
+            # /football-predictions/<league>/<home>-vs-<away>
+            if not re.search(
+                r"^/football-predictions/[^/]+/[^/]+-vs-[^/]+/?$",
+                href,
+                flags=re.IGNORECASE,
+            ):
+                continue
 
+            url = f"{self.EXPECTED90_BASE_URL}{href}"
             if url in seen:
                 continue
 
@@ -908,6 +909,7 @@ class ConsensusEngine:
         return score
 
     def fetch_expected90_sync(self):
+        """Fetch Expected90's daily match pages and feed 1X2 into consensus."""
         try:
             hub_html = self._fetch_expected90_html(
                 self.EXPECTED90_PREDICTIONS_URL
@@ -938,6 +940,8 @@ class ConsensusEngine:
                     url for _, url in scored_links[:self.EXPECTED90_MAX_MATCH_PAGES]
                 ]
             else:
+                # Safe fallback when the base five sources don't provide
+                # candidate fixtures that Expected90 can match.
                 candidates = all_links[:self.EXPECTED90_MAX_MATCH_PAGES]
 
             eat_tz = datetime.timezone(datetime.timedelta(hours=3))
@@ -987,6 +991,7 @@ class ConsensusEngine:
                         skipped_count += 1
                         continue
 
+                    # Ignore matches that have already started/finished.
                     if kickoff <= now_utc:
                         skipped_count += 1
                         continue
@@ -1169,6 +1174,15 @@ class ConsensusEngine:
         return raw_key, False
 
     def fetch_socceraitips_sync(self):
+        """
+        Fetch SoccerAiTips daily-parlay data.
+
+        SoccerAiTips' current adapter exposes secondary markets (BTTS and
+        Over 2.5) rather than a canonical 1X2 prediction. Therefore these
+        records are intentionally NOT added to the 1X2 consensus matrix.
+        They are retained as secondary-market evidence for diagnostics and
+        Gemini optimization.
+        """
         try:
             url = f"{self.SOCCERAITIPS_BASE_URL}{self.SOCCERAITIPS_DAILY_PARLAY_PATH}"
             response = requests.get(
@@ -1354,6 +1368,8 @@ class ConsensusEngine:
             raise RuntimeError(f"NVtips request failed: {exc}") from exc
 
         if response.status_code != 200:
+            # Optional proxy fallback using the repository's existing
+            # ScraperAPI credential. Direct requests remain the primary path.
             if SCRAPER_API_KEY:
                 try:
                     proxy_url = "https://api.scraperapi.com/"
@@ -1481,6 +1497,7 @@ class ConsensusEngine:
         return extracted
 
     def fetch_nvtips_sync(self):
+        """Fetch today's NVtips rows and feed 1X2 predictions into consensus."""
         try:
             eat_tz = datetime.timezone(datetime.timedelta(hours=3))
             today_eat = datetime.datetime.now(datetime.timezone.utc).astimezone(eat_tz).date()
@@ -1503,6 +1520,9 @@ class ConsensusEngine:
                         skipped_count += 1
                         continue
 
+                    # NVtips' daily page is date-scoped, so its displayed time
+                    # is used only for discovery. The canonical engine fixture
+                    # remains authoritative for kickoff.
                     log_result = self.log_prediction_qa(
                         "NVtips",
                         home,
@@ -1597,11 +1617,8 @@ class ConsensusEngine:
 
                 if attempt == 1 and cfg.get("use_scraperapi") and SCRAPER_API_KEY:
                     proxy_url = f"http://api.scraperapi.com?api_key={SCRAPER_API_KEY}&url={active_url}"
-                    if site_name == "WinDrawWin": 
+                    if site_name in ["PredictZ", "WinDrawWin"]: 
                         proxy_url += "&premium=true&render=true&country_code=uk" 
-                    elif site_name == "PredictZ":
-                        # Routed to US proxies to bypass the UK node 500 error
-                        proxy_url += "&premium=true&render=true&country_code=us"
                     elif site_name == "SoccerVista":
                         proxy_url += "&premium=true&render=true"
                     r = requests.get(proxy_url, timeout=75) 
@@ -1611,12 +1628,8 @@ class ConsensusEngine:
                 
                 else:
                     if cfg.get("use_scraperapi") and SCRAPER_API_KEY:
-                        proxy_url = f"http://api.scraperapi.com?api_key={SCRAPER_API_KEY}&url={active_url}"
-                        if site_name in ["PredictZ", "WinDrawWin", "SoccerVista"]: 
-                            proxy_url += "&premium=true&render=true&country_code=us"
-                        else:
-                            proxy_url += "&premium=true&country_code=us"
-                        r = requests.get(proxy_url, timeout=75)
+                        proxy_url = f"http://api.scraperapi.com?api_key={SCRAPER_API_KEY}&url={active_url}&premium=true&country_code=us"
+                        r = requests.get(proxy_url, timeout=60)
                     else:
                         r = tls_requests.get(active_url, impersonate="safari17_0", headers=strict_headers, timeout=30)
 
@@ -1686,25 +1699,7 @@ class ConsensusEngine:
                                         if p_div and self.normalize_prediction(p_div.text):
                                             pick = p_div.text
                                         else:
-                                            valid_picks = ["HOME", "DRAW", "AWAY", "1", "X", "2", "HOME WIN", "AWAY WIN", "H", "A", "D"]
-                                            for text_chunk in row.stripped_strings:
-                                                if text_chunk.strip().upper() in valid_picks:
-                                                    pick = text_chunk.strip()
-                                                    break
-                                    else:
-                                        # PredictZ new fallback: Single column table "Team A v Team B" with H/D/A outcome
-                                        tds = row.find_all(["td", "div"])
-                                        for td in tds:
-                                            txt = td.get_text(" ", strip=True)
-                                            if " v " in txt or " vs " in txt:
-                                                parts = re.split(r'\s+v\s+|\s+vs\s+', txt, maxsplit=1, flags=re.I)
-                                                if len(parts) == 2:
-                                                    home = parts[0].strip()
-                                                    away = parts[1].strip()
-                                                    break
-                                        
-                                        if home and away:
-                                            valid_picks = ["HOME", "DRAW", "AWAY", "1", "X", "2", "HOME WIN", "AWAY WIN", "H", "A", "D"]
+                                            valid_picks = ["HOME", "DRAW", "AWAY", "1", "X", "2", "HOME WIN", "AWAY WIN"]
                                             for text_chunk in row.stripped_strings:
                                                 if text_chunk.strip().upper() in valid_picks:
                                                     pick = text_chunk.strip()
@@ -1792,6 +1787,17 @@ class ConsensusEngine:
         self.diagnostics[site_name] = f"🔴 FAILED (HTTP {last_status if last_status else 'TIMEOUT'})"
 
     def process_consensus_signals(self):
+        """
+        Build two consensus tiers:
+
+        * CORE: at least 4 independent 1X2 sources agree.
+        * RESEARCH / RESERVE: exactly 3 sources agree.
+
+        The 3+ tier is primarily used for one reserve pick per ticket. It is
+        also exposed to Gemini for main-ticket selections when the 4+ core
+        pool contains fewer than 12 usable matches (four tickets x three
+        minimum selections).
+        """
         core_matches = []
         fallback_matches = []
         structured_tickets = []
@@ -1970,9 +1976,13 @@ class ConsensusEngine:
         models_to_try = self.get_available_gemini_models(api_key)
         secondary_market_data = secondary_market_data or []
 
+        # Four tickets x three minimum selections = 12 primary slots.
+        # The 3+ pool becomes available for primary selections only when the
+        # 4+ core pool is too small to fill those 12 slots.
         fallback_active = len(core_ai_input_data) < 12
         research_pool = list(fallback_ai_input_data) if fallback_active else []
 
+        # Reserves should come primarily from the exact-3 agreement pool.
         reserve_pool = sorted(
             fallback_ai_input_data,
             key=lambda item: (
@@ -2160,9 +2170,11 @@ class ConsensusEngine:
 
     @staticmethod
     def _validate_ticket_output(text, core_ai_input_data=None, fallback_ai_input_data=None):
+        """Validate four tickets, mixed allowed markets, 3+1 structure, and DNB ban."""
         if not isinstance(text, str) or not text.strip():
             return False, "EMPTY_RESPONSE"
 
+        # DNB is explicitly forbidden regardless of casing or punctuation.
         if re.search(r"\b(?:DNB|DRAW\s*[- ]?\s*NO\s*[- ]?\s*BET)\b", text, re.IGNORECASE):
             return False, "DRAW_NO_BET_FORBIDDEN"
 
@@ -2201,6 +2213,7 @@ class ConsensusEngine:
         )
         reserve_source_matches = all_research_matches
 
+        # Supported prediction forms. DNB is deliberately absent.
         allowed_prediction_pattern = re.compile(
             r"^(?:"
             r"1|X|2|1X|X2|12|"
@@ -2379,6 +2392,7 @@ class ConsensusEngine:
         memory = self.load_memory()
         today_payload = memory.get(today_date)
 
+        # STRICT LOCK LOGIC - SAVES API TOKENS
         is_already_locked = False
         if isinstance(today_payload, dict) and not FORCE_RUN:
             if today_payload.get("locked"):
@@ -2422,6 +2436,8 @@ class ConsensusEngine:
             print(f"🔓 Scraping and generating fresh tickets for {today_date}...")
             loop = asyncio.get_running_loop()
             with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:
+                # Phase 1: run the original sources first so they establish
+                # the canonical fixtures that Golsinyali can target.
                 base_tasks = [
                     loop.run_in_executor(
                         pool,
@@ -2440,6 +2456,8 @@ class ConsensusEngine:
                 )
                 await asyncio.gather(*base_tasks)
 
+                # Phase 2: run special source adapters after the base
+                # fixture matrix exists so they can target existing fixtures.
                 if "Golsinyali" in self.configs:
                     await loop.run_in_executor(
                         pool,
@@ -2510,6 +2528,9 @@ class ConsensusEngine:
                     self.secondary_market_data,
                 )
 
+            # Strict Lock Enforced here. The engine can lock once Gemini has
+            # produced a valid four-ticket output, or when there is no candidate
+            # data at all.
             should_lock = (
                 current_hour >= 5
                 and (
@@ -2538,6 +2559,9 @@ class ConsensusEngine:
 
         settled_reports = self.settle_pending_tickets(memory)
 
+        # Always print diagnostics to GitHub Actions logs. This is important when
+        # Telegram secrets are not configured yet, because otherwise scraper
+        # status would only be visible through Telegram.
         print("\n==========================================")
         print("SCRAPER / ENGINE DIAGNOSTICS")
         print("==========================================")
@@ -2569,6 +2593,8 @@ class ConsensusEngine:
             print("No SoccerAiTips secondary-market signals collected.")
         print("==========================================\n")
 
+        # Only send the Telegram alert if we actually scraped fresh data OR if we settled a ticket.
+        # This prevents spamming your phone with exact duplicate tickets in the afternoon.
         if not is_already_locked or settled_reports:
             if self.diagnostics.get("Consensus_Mode", "").startswith("🔬"):
                 msg = "🤝 **RAW CONSENSUS DATA (4+ SITES AGREEMENT)** 🤝\n\n"
