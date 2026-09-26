@@ -66,7 +66,7 @@ def get_dynamic_configs():
             "use_scraperapi": False
         },
         "PredictZ": {
-            "url": "https://www.predictz.com/predictions/today/",
+            "url": "https://www.predictz.com/predictions/",
             "fallback_url": "https://www.predictz.com/predictions/",
             "row_selector": "div", "row_class": "pttr",
             "home_selector": "div", "home_class": "pttmobh", "home_index": 0,
@@ -1617,11 +1617,11 @@ class ConsensusEngine:
 
                 if attempt == 1 and cfg.get("use_scraperapi") and SCRAPER_API_KEY:
                     proxy_url = f"http://api.scraperapi.com?api_key={SCRAPER_API_KEY}&url={active_url}"
-                    if site_name == "SoccerVista": 
-                        proxy_url += "&render=true"
-                    if site_name == "PredictZ": 
-                        proxy_url += "&premium=true&render=true" 
-                    r = requests.get(proxy_url, timeout=60)
+                    if site_name in ["PredictZ", "WinDrawWin"]: 
+                        proxy_url += "&premium=true&render=true&country_code=uk" 
+                    elif site_name == "SoccerVista":
+                        proxy_url += "&premium=true&render=true"
+                    r = requests.get(proxy_url, timeout=75) 
                 
                 elif attempt == 2:
                     r = tls_requests.get(active_url, impersonate="chrome124", headers=strict_headers, timeout=30)
@@ -1648,10 +1648,12 @@ class ConsensusEngine:
                     
                     if site_name in ["PredictZ", "WinDrawWin"]:
                         prefix = "pt" if site_name == "PredictZ" else "wt"
-                        rows = soup.find_all("div", class_=re.compile(f"({prefix}tr|{prefix}row|match-row)"))
+                        rows = soup.find_all("div", class_=re.compile(f"({prefix}tr|{prefix}row|match-row)", re.I))
                         if not rows:
-                            h_elements = soup.find_all("div", class_=re.compile(f"{prefix}tmobh|{prefix}team|{prefix}tm"))
-                            rows = [h.parent for h in h_elements if h.parent]
+                            rows = soup.find_all("tr")
+                        if not rows:
+                            raw_rows = soup.find_all("div", class_=re.compile(r'(row|match|fixture)', re.I))
+                            rows = [r for r in raw_rows if len(r.find_all('a')) >= 2 and len(r.text) < 800]
                     elif site_name == "SoccerVista":
                         rows = soup.find_all("tr")
                         if not rows:
@@ -1679,11 +1681,9 @@ class ConsensusEngine:
                             home, away, pick = None, None, None
 
                             if site_name in ["PredictZ", "WinDrawWin"]:
-                                prefix = "pt" if site_name == "PredictZ" else "wt"
-                                
-                                h_elem = row.find(class_=f"{prefix}tmobh")
-                                a_elem = row.find(class_=f"{prefix}tmoba")
-                                p_elem = row.find(class_=re.compile(f"{prefix}oddsdesc|{prefix}mobpred"))
+                                h_elem = row.find(class_=re.compile(r'(tmobh|h$|home|team1)', re.I))
+                                a_elem = row.find(class_=re.compile(r'(tmoba|a$|away|team2)', re.I))
+                                p_elem = row.find(class_=re.compile(r'(oddsdesc|mobpred|prd|pred|pick|tip)', re.I))
 
                                 if h_elem and a_elem and p_elem:
                                     home = h_elem.text
@@ -1692,16 +1692,18 @@ class ConsensusEngine:
                                 else:
                                     links = row.find_all("a")
                                     if len(links) >= 2:
-                                        home = links[0].text
-                                        away = links[1].text
-                                        p_div = row.find(class_=re.compile(f"{prefix}prd|{prefix}pred"))
-                                        if p_div: pick = p_div.text
-                                    else:
-                                        for td in row.find_all("div", class_=f"{prefix}td"):
-                                            norm = self.normalize_prediction(td.text)
-                                            if norm:
-                                                pick = norm
-                                                break
+                                        home = links[0].text.strip()
+                                        away = links[1].text.strip()
+                                        
+                                        p_div = row.find(class_=re.compile(r'(prd|pred|odds)', re.I))
+                                        if p_div and self.normalize_prediction(p_div.text):
+                                            pick = p_div.text
+                                        else:
+                                            valid_picks = ["HOME", "DRAW", "AWAY", "1", "X", "2", "HOME WIN", "AWAY WIN"]
+                                            for text_chunk in row.stripped_strings:
+                                                if text_chunk.strip().upper() in valid_picks:
+                                                    pick = text_chunk.strip()
+                                                    break
                                                 
                             elif site_name == "SoccerVista":
                                 tds = row.find_all("td")
