@@ -33,7 +33,7 @@ def get_dynamic_configs():
             "use_scraperapi": False
         },
         "Expected90": {
-            "url": "https://expected90.com/football-predictions",
+            "url": "https://www.90predict.com/football-predictions-today",
             "fallback_url": None,
             "use_scraperapi": False
         },
@@ -66,7 +66,7 @@ def get_dynamic_configs():
             "use_scraperapi": False
         },
         "PredictZ": {
-            "url": "https://www.predictz.com/predictions/",
+            "url": "https://www.predictz.com/predictions/today/",
             "fallback_url": "https://www.predictz.com/predictions/",
             "row_selector": "div", "row_class": "pttr",
             "home_selector": "div", "home_class": "pttmobh", "home_index": 0,
@@ -105,9 +105,9 @@ class ConsensusEngine:
 
     def normalize_prediction(self, raw_text):
         text = str(raw_text).strip().lower()
-        if text in ["home", "home win"]: return "1"
-        if text in ["draw", "x", "0"]: return "X"
-        if text in ["away", "away win"]: return "2"
+        if text in ["home", "home win", "h"]: return "1"
+        if text in ["draw", "x", "0", "d"]: return "X"
+        if text in ["away", "away win", "a"]: return "2"
 
         if len(text) > 0:
             char = text[0]
@@ -693,10 +693,10 @@ class ConsensusEngine:
             self.diagnostics["Golsinyali"] = f"🔴 FAILED ({exc})"
 
     # ==========================================================================
-    # EXPECTED90 DEDICATED ADAPTER
+    # EXPECTED90 / 90PREDICT DEDICATED ADAPTER
     # ==========================================================================
-    EXPECTED90_BASE_URL = "https://expected90.com"
-    EXPECTED90_PREDICTIONS_URL = f"{EXPECTED90_BASE_URL}/football-predictions"
+    EXPECTED90_BASE_URL = "https://www.90predict.com"
+    EXPECTED90_PREDICTIONS_URL = f"{EXPECTED90_BASE_URL}/football-predictions-today"
     EXPECTED90_REQUEST_TIMEOUT = 30
     EXPECTED90_MAX_MATCH_PAGES = 60
     EXPECTED90_USER_AGENT = (
@@ -870,7 +870,7 @@ class ConsensusEngine:
             href = anchor["href"].strip()
             
             # Relaxed regex to ensure we grab the links even if their structure slightly updates
-            if "/football-predictions/" not in href or "-vs-" not in href:
+            if "-vs-" not in href:
                 continue
 
             if href.startswith("http"):
@@ -1686,7 +1686,25 @@ class ConsensusEngine:
                                         if p_div and self.normalize_prediction(p_div.text):
                                             pick = p_div.text
                                         else:
-                                            valid_picks = ["HOME", "DRAW", "AWAY", "1", "X", "2", "HOME WIN", "AWAY WIN"]
+                                            valid_picks = ["HOME", "DRAW", "AWAY", "1", "X", "2", "HOME WIN", "AWAY WIN", "H", "A", "D"]
+                                            for text_chunk in row.stripped_strings:
+                                                if text_chunk.strip().upper() in valid_picks:
+                                                    pick = text_chunk.strip()
+                                                    break
+                                    else:
+                                        # PredictZ new fallback: Single column table "Team A v Team B" with H/D/A outcome
+                                        tds = row.find_all(["td", "div"])
+                                        for td in tds:
+                                            txt = td.get_text(" ", strip=True)
+                                            if " v " in txt or " vs " in txt:
+                                                parts = re.split(r'\s+v\s+|\s+vs\s+', txt, maxsplit=1, flags=re.I)
+                                                if len(parts) == 2:
+                                                    home = parts[0].strip()
+                                                    away = parts[1].strip()
+                                                    break
+                                        
+                                        if home and away:
+                                            valid_picks = ["HOME", "DRAW", "AWAY", "1", "X", "2", "HOME WIN", "AWAY WIN", "H", "A", "D"]
                                             for text_chunk in row.stripped_strings:
                                                 if text_chunk.strip().upper() in valid_picks:
                                                     pick = text_chunk.strip()
