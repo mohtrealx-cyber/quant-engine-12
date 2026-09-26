@@ -621,5 +621,26 @@
                 "score": "-"
             }
         ]
+    },
+    "2026-09-26": {
+        "locked": true,
+        "agreed_matches": [],
+        "core_matches_4plus": [],
+        "fallback_matches_3plus": [
+            "\u2022 **Faroe Islands vs Kazakhstan** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + SoccerVista + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa PredictZ: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Slovakia vs Moldova** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + Statarea + SoccerVista`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa PredictZ: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Cambridge United vs Afc Wimbledon** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + NVtips`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa PredictZ: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
+            "\u2022 **Plymouth vs Burton Albion** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + NVtips`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa PredictZ: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
+            "\u2022 **Bristol Rovers Fc vs Exeter City Fc** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + Statarea + NVtips`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa PredictZ: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
+            "\u2022 **Sotra vs Pors Grenland** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa PredictZ: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Jerv vs Notodden** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa PredictZ: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Kjelsas vs Follo** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa PredictZ: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Musa vs Njs** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa PredictZ: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n"
+        ],
+        "fallback_active": true,
+        "ai_optimized_message": "\ud83d\udee1\ufe0f Ticket 1: Ironclad (40% of Daily Stake)\n\u2022 Slovakia vs Moldova \u2794 1X\n\u2022 Faroe Islands vs Kazakhstan \u2794 1X\n\u2022 Plymouth vs Burton Albion \u2794 1X\n\u21b3 Reserve: Cambridge United vs Afc Wimbledon \u2794 1X\n\n\u2696\ufe0f Ticket 2: Balanced (10% of Daily Stake)\n\u2022 Kjelsas vs Follo \u2794 1\n\u2022 Musa vs Njs \u2794 1\n\u2022 Cambridge United vs Afc Wimbledon \u2794 1\n\u21b3 Reserve: Sotra vs Pors Grenland \u2794 1X\n\n\ud83c\udfaf Ticket 3: Volatility (10% of Daily Stake)\n\u2022 Slovakia vs Moldova \u2794 1\n\u2022 Faroe Islands vs Kazakhstan \u2794 1\n\u2022 Plymouth vs Burton Albion \u2794 1\n\u21b3 Reserve: Musa vs Njs \u2794 1\n\n\ud83e\uddea Ticket 4: Custom Tickets (40% of Daily Stake)\n\u2022 Bristol Rovers Fc vs Exeter City Fc \u2794 1\n\u2022 Sotra vs Pors Grenland \u2794 1\n\u2022 Jerv vs Notodden \u2794 1\n\u21b3 Reserve: Kjelsas vs Follo \u2794 1",
+        "req_threshold": 4,
+        "fallback_threshold": 3,
+        "tickets": []
     }
 }
