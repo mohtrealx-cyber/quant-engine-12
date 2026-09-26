@@ -624,25 +624,146 @@
     },
     "2026-09-26": {
         "locked": true,
-        "agreed_matches": [],
-        "core_matches_4plus": [],
-        "fallback_matches_3plus": [
-            "\u2022 **Cambridge United vs Afc Wimbledon** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + NVtips`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa PredictZ: Not Listed\n  \u21b3 \u26a0\ufe0f WinDrawWin backed: X\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
-            "\u2022 **Plymouth vs Burton Albion** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + NVtips`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa PredictZ: Not Listed\n  \u21b3 \u26a0\ufe0f WinDrawWin backed: X\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
-            "\u2022 **Sotra vs Pors Grenland** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa PredictZ: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
-            "\u2022 **Jerv vs Notodden** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa PredictZ: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
-            "\u2022 **Kristianstads Dff (W) vs Vittsjo Gik (W)** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa PredictZ: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
-            "\u2022 **Bristol Rovers vs Exeter** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + NVtips`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa PredictZ: Not Listed\n  \u21b3 \u26a0\ufe0f WinDrawWin backed: X\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
-            "\u2022 **Altrincham vs Afc Hornchurch** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + WinDrawWin`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa PredictZ: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
-            "\u2022 **Harrogate Town vs Eastleigh** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + NVtips`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa PredictZ: Not Listed\n  \u21b3 \u26a0\ufe0f WinDrawWin backed: X\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
-            "\u2022 **Scunthorpe vs Hartlepool** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + WinDrawWin`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa PredictZ: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
-            "\u2022 **Kjelsas vs Follo** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa PredictZ: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
-            "\u2022 **Musa vs Njs** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa PredictZ: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n"
+        "agreed_matches": [
+            "\u2022 **Cambridge United vs Afc Wimbledon** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + WinDrawWin + PredictZ + Golsinyali + NVtips`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
+            "\u2022 **Plymouth vs Burton Albion** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + WinDrawWin + PredictZ + Golsinyali + NVtips`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
+            "\u2022 **Stockport vs Peterborough** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + WinDrawWin + PredictZ + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Slovakia vs Moldova** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + WinDrawWin + PredictZ + SoccerVista`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Bristol Rovers vs Exeter** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + WinDrawWin + PredictZ + Golsinyali + NVtips`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
+            "\u2022 **Swindon Town vs Accrington St** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + WinDrawWin + PredictZ + NVtips`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26a0\ufe0f Vitibet backed: X\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
+            "\u2022 **Carlisle vs Woking** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + WinDrawWin + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Harrogate Town vs Eastleigh** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + WinDrawWin + PredictZ + NVtips`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
+            "\u2022 **Wealdstone vs Gateshead** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + WinDrawWin + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Faroe Islands vs Kazakhstan** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + WinDrawWin + SoccerVista + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26a0\ufe0f PredictZ backed: X\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Kenya vs Eritrea** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + WinDrawWin + PredictZ + SoccerVista`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Southend vs Barrow** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + WinDrawWin + PredictZ + NVtips`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
+            "\u2022 **Fleetwood Town vs Rochdale** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + WinDrawWin + PredictZ + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26a0\ufe0f NVtips backed: 2\n",
+            "\u2022 **Wycombe vs Reading** \u2794 2\n  \u21b3 \u2705 Backed by: `Vitibet + PredictZ + Golsinyali + NVtips`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26a0\ufe0f WinDrawWin backed: 1\n  \u21b3 \u26aa SoccerVista: Not Listed\n"
         ],
-        "fallback_active": true,
-        "ai_optimized_message": "\ud83d\udee1\ufe0f Ticket 1: Ironclad (40% of Daily Stake)\n\u2022 Altrincham vs Afc Hornchurch \u2794 1\n\u2022 Jerv vs Notodden \u2794 1\n\u2022 Scunthorpe vs Hartlepool \u2794 1\n\u21b3 Reserve: Cambridge United vs Afc Wimbledon \u2794 1X\n\n\u2696\ufe0f Ticket 2: Balanced (10% of Daily Stake)\n\u2022 Kristianstads Dff (W) vs Vittsjo Gik (W) \u2794 1\n\u2022 Cambridge United vs Afc Wimbledon \u2794 1X\n\u2022 Plymouth vs Burton Albion \u2794 1X\n\u21b3 Reserve: Bristol Rovers vs Exeter \u2794 1X\n\n\ud83c\udfaf Ticket 3: Volatility (10% of Daily Stake)\n\u2022 Bristol Rovers vs Exeter \u2794 1X\n\u2022 Harrogate Town vs Eastleigh \u2794 1X\n\u2022 Altrincham vs Afc Hornchurch \u2794 1\n\u21b3 Reserve: Jerv vs Notodden \u2794 1\n\n\ud83e\uddea Ticket 4: Custom Tickets (40% of Daily Stake)\n\u2022 Sotra vs Pors Grenland \u2794 1\n\u2022 Kjelsas vs Follo \u2794 1\n\u2022 Musa vs Njs \u2794 1\n\u21b3 Reserve: Plymouth vs Burton Albion \u2794 1X",
+        "core_matches_4plus": [
+            "\u2022 **Cambridge United vs Afc Wimbledon** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + WinDrawWin + PredictZ + Golsinyali + NVtips`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
+            "\u2022 **Plymouth vs Burton Albion** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + WinDrawWin + PredictZ + Golsinyali + NVtips`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
+            "\u2022 **Stockport vs Peterborough** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + WinDrawWin + PredictZ + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Slovakia vs Moldova** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + WinDrawWin + PredictZ + SoccerVista`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Bristol Rovers vs Exeter** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + WinDrawWin + PredictZ + Golsinyali + NVtips`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
+            "\u2022 **Swindon Town vs Accrington St** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + WinDrawWin + PredictZ + NVtips`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26a0\ufe0f Vitibet backed: X\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
+            "\u2022 **Carlisle vs Woking** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + WinDrawWin + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Harrogate Town vs Eastleigh** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + WinDrawWin + PredictZ + NVtips`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
+            "\u2022 **Wealdstone vs Gateshead** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + WinDrawWin + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Faroe Islands vs Kazakhstan** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + WinDrawWin + SoccerVista + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26a0\ufe0f PredictZ backed: X\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Kenya vs Eritrea** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + WinDrawWin + PredictZ + SoccerVista`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Southend vs Barrow** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + WinDrawWin + PredictZ + NVtips`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
+            "\u2022 **Fleetwood Town vs Rochdale** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + WinDrawWin + PredictZ + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26a0\ufe0f NVtips backed: 2\n",
+            "\u2022 **Wycombe vs Reading** \u2794 2\n  \u21b3 \u2705 Backed by: `Vitibet + PredictZ + Golsinyali + NVtips`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26a0\ufe0f WinDrawWin backed: 1\n  \u21b3 \u26aa SoccerVista: Not Listed\n"
+        ],
+        "fallback_matches_3plus": [
+            "\u2022 **Altrincham vs Afc Hornchurch** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + WinDrawWin`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26a0\ufe0f PredictZ backed: X\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Scunthorpe vs Hartlepool** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + WinDrawWin`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26a0\ufe0f PredictZ backed: X\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Worthing vs Fc Halifax Town** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + WinDrawWin`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26a0\ufe0f PredictZ backed: X\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Hednesford Town vs Radcliffe Fc** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Oxford City vs Morecambe** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Southport vs Spennymoor Town** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Dagenham And Redbridge vs Hampton And Richmond** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Dorking Wanderers vs Braintree** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Salisbury Fc vs Folkestone Invicta** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Iceland vs Estonia** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + WinDrawWin + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26a0\ufe0f SoccerVista backed: 2\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Albania vs Belarus** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + WinDrawWin + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26a0\ufe0f SoccerVista backed: 2\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Fyr Macedonia vs Switzerland** \u2794 2\n  \u21b3 \u2705 Backed by: `Vitibet + PredictZ + SoccerVista`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26a0\ufe0f WinDrawWin backed: 1\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **South Africa vs Guinea** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + WinDrawWin + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26a0\ufe0f SoccerVista backed: X\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Aldershot Town vs Tamworth** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + WinDrawWin + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Croatia (U21) vs Hungary (U21)** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + SoccerVista + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Vitibet: Not Listed\n  \u21b3 \u26aa PredictZ: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Kidderminster Harriers vs Yeovil Town** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + WinDrawWin + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Cheltenham vs Chesterfield** \u2794 2\n  \u21b3 \u2705 Backed by: `PredictZ + Golsinyali + NVtips`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26a0\ufe0f Vitibet backed: 1\n  \u21b3 \u26a0\ufe0f WinDrawWin backed: 1\n  \u21b3 \u26aa SoccerVista: Not Listed\n"
+        ],
+        "fallback_active": false,
+        "ai_optimized_message": "\ud83d\udee1\ufe0f Ticket 1: Ironclad (40% of Daily Stake)\n\u2022 Cambridge United vs Afc Wimbledon \u2794 1\n\u2022 Plymouth vs Burton Albion \u2794 1\n\u2022 Bristol Rovers vs Exeter \u2794 1\n\u21b3 Reserve: Aldershot Town vs Tamworth \u2794 1\n\n\u2696\ufe0f Ticket 2: Balanced (10% of Daily Stake)\n\u2022 Carlisle vs Woking \u2794 1\n\u2022 Wealdstone vs Gateshead \u2794 1\n\u2022 Southend vs Barrow \u2794 1\n\u21b3 Reserve: Dagenham And Redbridge vs Hampton And Richmond \u2794 1\n\n\ud83c\udfaf Ticket 3: Volatility (10% of Daily Stake)\n\u2022 Kenya vs Eritrea \u2794 1\n\u2022 Swindon Town vs Accrington St \u2794 1\n\u2022 Wycombe vs Reading \u2794 2\n\u21b3 Reserve: Dorking Wanderers vs Braintree \u2794 1\n\n\ud83e\uddea Ticket 4: Custom Tickets (40% of Daily Stake)\n\u2022 Stockport vs Peterborough \u2794 1\n\u2022 Slovakia vs Moldova \u2794 1\n\u2022 Harrogate Town vs Eastleigh \u2794 1\n\u21b3 Reserve: Croatia (U21) vs Hungary (U21) \u2794 1",
         "req_threshold": 4,
         "fallback_threshold": 3,
-        "tickets": []
+        "tickets": [
+            {
+                "match": "Cambridge United vs Afc Wimbledon",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Plymouth vs Burton Albion",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Stockport vs Peterborough",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Slovakia vs Moldova",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Bristol Rovers vs Exeter",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Swindon Town vs Accrington St",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Carlisle vs Woking",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Harrogate Town vs Eastleigh",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Wealdstone vs Gateshead",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Faroe Islands vs Kazakhstan",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Kenya vs Eritrea",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Southend vs Barrow",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Fleetwood Town vs Rochdale",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Wycombe vs Reading",
+                "prediction": "2",
+                "status": "PENDING",
+                "score": "-"
+            }
+        ]
     }
 }
