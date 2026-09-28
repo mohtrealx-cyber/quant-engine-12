@@ -924,21 +924,50 @@
     },
     "2026-09-28": {
         "locked": true,
-        "agreed_matches": [],
-        "core_matches_4plus": [],
+        "agreed_matches": [
+            "\u2022 **Georgia vs Ukraine** \u2794 X\n  \u21b3 \u2705 Backed by: `Vitibet + PredictZ + WinDrawWin + SoccerVista`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Armenia vs Montenegro** \u2794 X\n  \u21b3 \u2705 Backed by: `Vitibet + PredictZ + WinDrawWin + SoccerVista`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26a0\ufe0f Statarea backed: 1\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Kallithea vs Asteras Tripolis B** \u2794 1\n  \u21b3 \u2705 Backed by: `PredictZ + WinDrawWin + SoccerVista + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa Vitibet: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n"
+        ],
+        "core_matches_4plus": [
+            "\u2022 **Georgia vs Ukraine** \u2794 X\n  \u21b3 \u2705 Backed by: `Vitibet + PredictZ + WinDrawWin + SoccerVista`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Armenia vs Montenegro** \u2794 X\n  \u21b3 \u2705 Backed by: `Vitibet + PredictZ + WinDrawWin + SoccerVista`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26a0\ufe0f Statarea backed: 1\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Kallithea vs Asteras Tripolis B** \u2794 1\n  \u21b3 \u2705 Backed by: `PredictZ + WinDrawWin + SoccerVista + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa Vitibet: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n"
+        ],
         "fallback_matches_3plus": [
-            "\u2022 **Georgia vs Ukraine** \u2794 X\n  \u21b3 \u2705 Backed by: `Vitibet + PredictZ + SoccerVista`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
-            "\u2022 **Armenia vs Montenegro** \u2794 X\n  \u21b3 \u2705 Backed by: `Vitibet + PredictZ + SoccerVista`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26a0\ufe0f Statarea backed: 1\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
-            "\u2022 **Sweden vs Poland** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + Statarea + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26a0\ufe0f SoccerVista backed: X\n  \u21b3 \u26aa NVtips: Not Listed\n",
-            "\u2022 **Polissya Ii vs Kolos Kovalivka Ii** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + PredictZ + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
-            "\u2022 **Ofk Bor 1919 vs Metalac Gm** \u2794 2\n  \u21b3 \u2705 Backed by: `Vitibet + PredictZ + SoccerVista`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
-            "\u2022 **Japan vs Venezuela** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + PredictZ + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Vitibet: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
-            "\u2022 **Kallithea vs Asteras Tripolis B** \u2794 1\n  \u21b3 \u2705 Backed by: `PredictZ + SoccerVista + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa Vitibet: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n"
+            "\u2022 **Latvia vs Cyprus** \u2794 X\n  \u21b3 \u2705 Backed by: `Vitibet + PredictZ + WinDrawWin`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26a0\ufe0f SoccerVista backed: 2\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Turkey vs Italy** \u2794 X\n  \u21b3 \u2705 Backed by: `PredictZ + WinDrawWin + SoccerVista`\n  \u21b3 \u26a0\ufe0f Golsinyali backed: 2\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26a0\ufe0f Vitibet backed: 1\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Northern Ireland vs Hungary** \u2794 X\n  \u21b3 \u2705 Backed by: `PredictZ + WinDrawWin + SoccerVista`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26a0\ufe0f Statarea backed: 1\n  \u21b3 \u26a0\ufe0f Vitibet backed: 1\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Sweden vs Poland** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + Statarea + PredictZ`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26a0\ufe0f WinDrawWin backed: X\n  \u21b3 \u26a0\ufe0f SoccerVista backed: X\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Romania vs Bosnia And Herzegovina** \u2794 X\n  \u21b3 \u2705 Backed by: `PredictZ + WinDrawWin + SoccerVista`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26a0\ufe0f Vitibet backed: 1\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Zimbabwe vs Dr Congo** \u2794 X\n  \u21b3 \u2705 Backed by: `PredictZ + WinDrawWin + SoccerVista`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26a0\ufe0f Vitibet backed: 2\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Polissya Ii vs Kolos Kovalivka Ii** \u2794 1\n  \u21b3 \u2705 Backed by: `Vitibet + PredictZ + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26a0\ufe0f WinDrawWin backed: X\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Ofk Bor 1919 vs Metalac Gm** \u2794 2\n  \u21b3 \u2705 Backed by: `Vitibet + PredictZ + SoccerVista`\n  \u21b3 \u26aa Golsinyali: Not Listed\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26a0\ufe0f WinDrawWin backed: X\n  \u21b3 \u26aa NVtips: Not Listed\n",
+            "\u2022 **Japan vs Venezuela** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + PredictZ + Golsinyali`\n  \u21b3 \u26aa Expected90: Not Listed\n  \u21b3 \u26aa Vitibet: Not Listed\n  \u21b3 \u26a0\ufe0f WinDrawWin backed: X\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa NVtips: Not Listed\n"
         ],
         "fallback_active": true,
-        "ai_optimized_message": "\ud83d\udee1\ufe0f Ticket 1: Ironclad (40% of Daily Stake)\n\u2022 Japan vs Venezuela \u2794 1\n\u2022 Kallithea vs Asteras Tripolis B \u2794 1\n\u2022 Polissya Ii vs Kolos Kovalivka Ii \u2794 1\n\u21b3 Reserve: Ofk Bor 1919 vs Metalac Gm \u2794 X2\n\n\u2696\ufe0f Ticket 2: Balanced (10% of Daily Stake)\n\u2022 Georgia vs Ukraine \u2794 X2\n\u2022 Sweden vs Poland \u2794 1X\n\u2022 Armenia vs Montenegro \u2794 1X\n\u21b3 Reserve: Kallithea vs Asteras Tripolis B \u2794 1\n\n\ud83c\udfaf Ticket 3: Volatility (10% of Daily Stake)\n\u2022 Georgia vs Ukraine \u2794 X\n\u2022 Armenia vs Montenegro \u2794 X\n\u2022 Sweden vs Poland \u2794 1\n\u21b3 Reserve: Japan vs Venezuela \u2794 1\n\n\ud83e\uddea Ticket 4: Custom Tickets (40% of Daily Stake)\n\u2022 Japan vs Venezuela \u2794 1X\n\u2022 Kallithea vs Asteras Tripolis B \u2794 1X\n\u2022 Ofk Bor 1919 vs Metalac Gm \u2794 2\n\u21b3 Reserve: Georgia vs Ukraine \u2794 X2",
+        "ai_optimized_message": "\ud83d\udee1\ufe0f Ticket 1: Ironclad (40% of Daily Stake)\n\u2022 Kallithea vs Asteras Tripolis B \u2794 1\n\u2022 Georgia vs Ukraine \u2794 X\n\u2022 Armenia vs Montenegro \u2794 X\n\u21b3 Reserve: Japan vs Venezuela \u2794 1\n\n\u2696\ufe0f Ticket 2: Balanced (10% of Daily Stake)\n\u2022 Romania vs Bosnia And Herzegovina \u2794 X\n\u2022 Zimbabwe vs Dr Congo \u2794 X\n\u2022 Latvia vs Cyprus \u2794 X\n\u21b3 Reserve: Polissya Ii vs Kolos Kovalivka Ii \u2794 1\n\n\ud83c\udfaf Ticket 3: Volatility (10% of Daily Stake)\n\u2022 Northern Ireland vs Hungary \u2794 X\n\u2022 Sweden vs Poland \u2794 1\n\u2022 Turkey vs Italy \u2794 X\n\u21b3 Reserve: Ofk Bor 1919 vs Metalac Gm \u2794 2\n\n\ud83e\uddea Ticket 4: Custom Tickets (40% of Daily Stake)\n\u2022 Polissya Ii vs Kolos Kovalivka Ii \u2794 1\n\u2022 Ofk Bor 1919 vs Metalac Gm \u2794 2\n\u2022 Japan vs Venezuela \u2794 1\n\u21b3 Reserve: Romania vs Bosnia And Herzegovina \u2794 X",
         "req_threshold": 4,
         "fallback_threshold": 3,
-        "tickets": []
+        "tickets": [
+            {
+                "match": "Georgia vs Ukraine",
+                "prediction": "X",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Armenia vs Montenegro",
+                "prediction": "X",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Kallithea vs Asteras Tripolis B",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            }
+        ]
     }
 }
