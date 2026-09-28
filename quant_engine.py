@@ -66,7 +66,7 @@ def get_dynamic_configs():
             "use_scraperapi": False
         },
         "PredictZ": {
-            "url": "https://www.predictz.com/predictions/",
+            "url": "https://www.predictz.com/predictions/today/",
             "fallback_url": "https://www.predictz.com/predictions/",
             "row_selector": "div", "row_class": "pttr",
             "home_selector": "div", "home_class": "pttmobh", "home_index": 0,
@@ -1594,9 +1594,8 @@ class ConsensusEngine:
 
                 if attempt == 1 and cfg.get("use_scraperapi") and SCRAPER_API_KEY:
                     proxy_url = f"http://api.scraperapi.com?api_key={SCRAPER_API_KEY}&url={active_url}"
-                    if site_name == "WinDrawWin": 
-                        proxy_url += "&premium=true&render=true&country_code=uk" 
-                    elif site_name == "PredictZ":
+                    if site_name in ["PredictZ", "WinDrawWin"]:
+                        # Fully route both sister sites through US nodes to bypass UK burnout
                         proxy_url += "&premium=true&render=true&country_code=us"
                     elif site_name == "SoccerVista":
                         proxy_url += "&premium=true&render=true"
@@ -1608,10 +1607,7 @@ class ConsensusEngine:
                 else:
                     if cfg.get("use_scraperapi") and SCRAPER_API_KEY:
                         proxy_url = f"http://api.scraperapi.com?api_key={SCRAPER_API_KEY}&url={active_url}"
-                        if site_name == "WinDrawWin":
-                            # EU failover for WinDrawWin to bypass dead UK nodes
-                            proxy_url += "&premium=true&render=true&country_code=eu"
-                        elif site_name in ["PredictZ", "SoccerVista"]: 
+                        if site_name in ["PredictZ", "WinDrawWin", "SoccerVista"]: 
                             proxy_url += "&premium=true&render=true&country_code=us"
                         else:
                             proxy_url += "&premium=true&country_code=us"
