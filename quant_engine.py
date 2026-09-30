@@ -18,7 +18,7 @@ TELEGRAM_CHAT_ID = os.environ.get("QUANT_TELEGRAM_CHAT_ID") or os.environ.get("T
 SCRAPER_API_KEY = (os.environ.get("SCRAPER_API_KEY") or "").strip()
 GEMINI_API_KEY = (os.environ.get("GEMINI_API_KEY") or "").strip()
 
-# FORCED TO TRUE TO BREAK THE CACHE AND TEST THE FIXES
+# KEEPING THIS TRUE FOR ONE LAST RUN TO BREAK THE CACHE
 FORCE_RUN = True 
 
 MEMORY_FILE = "pending_tickets.json"
@@ -68,7 +68,7 @@ def get_dynamic_configs():
             "use_scraperapi": False
         },
         "PredictZ": {
-            "url": "https://www.predictz.com/predictions/today/",
+            "url": "https://www.predictz.com/predictions/",
             "fallback_url": "https://www.predictz.com/predictions/",
             "row_selector": "div", "row_class": "pttr",
             "home_selector": "div", "home_class": "pttmobh", "home_index": 0,
@@ -1594,10 +1594,8 @@ class ConsensusEngine:
             try:
                 active_url = cfg.get("fallback_url") if (attempt == 3 and cfg.get("fallback_url")) else target_url
 
-                # FIX 2: Correcting the PredictZ proxy routing to mirror the successful WinDrawWin UK TLS tunnel
                 if attempt == 1 and cfg.get("use_scraperapi") and SCRAPER_API_KEY:
                     if site_name in ["PredictZ", "WinDrawWin"]:
-                        # God Mode Proxy Tunnel for BOTH sites
                         proxy_auth = f"scraperapi.premium=true.country_code=uk:{SCRAPER_API_KEY}"
                         proxy_url = f"http://{proxy_auth}@proxy-server.scraperapi.com:8001"
                         r = tls_requests.get(active_url, impersonate="chrome124", proxies={"http": proxy_url, "https": proxy_url}, timeout=45)
@@ -1625,8 +1623,10 @@ class ConsensusEngine:
                 last_status = r.status_code
 
                 if r.status_code == 200:
-                    challenge_phrases = ["just a moment...", "cf-browser-verification", "checking your browser", "turnstile", "ray id", "security check"]
-                    if any(phrase in r.text.lower() for phrase in challenge_phrases) and len(r.text) < 25000:
+                    challenge_phrases = ["just a moment", "cf-browser-verification", "checking your browser", "turnstile", "ray id", "security check", "verify you are human", "enable javascript", "attention required", "cloudflare"]
+                    
+                    # Expanded char limit to 75000 to catch thick Cloudflare Turnstile pages masquerading as 200 OKs
+                    if any(phrase in r.text.lower() for phrase in challenge_phrases) and len(r.text) < 75000:
                         if attempt < max_attempts:
                             time.sleep(2 * attempt)
                             continue
@@ -1670,15 +1670,17 @@ class ConsensusEngine:
                             home, away, pick = None, None, None
 
                             if site_name in ["PredictZ", "WinDrawWin"]:
-                                h_elem = row.find(class_=re.compile(r'(tmobh|h$|home|team1)', re.I))
-                                a_elem = row.find(class_=re.compile(r'(tmoba|a$|away|team2)', re.I))
-                                p_elem = row.find(class_=re.compile(r'(oddsdesc|mobpred|prd|pred|pick|tip)', re.I))
+                                h_elem = row.find(class_=re.compile(r'(tmobh|team1|h$|home)', re.I))
+                                a_elem = row.find(class_=re.compile(r'(tmoba|team2|a$|away)', re.I))
+                                p_elem = row.find(class_=re.compile(r'(oddsdesc|mobpred|prd|pred|pick|tip|prediction)', re.I))
 
-                                if h_elem and a_elem and p_elem:
+                                if h_elem and a_elem:
                                     home = h_elem.text
                                     away = a_elem.text
-                                    pick = p_elem.text
-                                else:
+                                    if p_elem:
+                                        pick = p_elem.text
+                                    
+                                if not home or not away:
                                     links = row.find_all("a")
                                     if len(links) >= 2:
                                         home = links[0].text.strip()
@@ -1932,7 +1934,6 @@ class ConsensusEngine:
             fallback_active,
         )
 
-    # FIX 1: Overhauling Gemini Model Selection to blacklist zero-quota models
     def get_available_gemini_models(self, api_key):
         list_url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}"
         try:
@@ -1945,7 +1946,7 @@ class ConsensusEngine:
                     if "generateContent" in m.get("supportedGenerationMethods", [])
                 ]
                 
-                # Strictly filter out deep-research, pro-preview, thinking, and embedding models
+                # Filter out experimental/zero-quota models to guarantee success
                 usable_flash = [
                     m for m in available 
                     if "flash" in m.lower() 
@@ -1956,7 +1957,6 @@ class ConsensusEngine:
         except Exception:
             pass
         
-        # Safe fallback standard tiers if the API call fails
         return ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
 
     def ask_llm_to_optimize_tickets(
@@ -2079,7 +2079,7 @@ class ConsensusEngine:
 
         EXACT OUTPUT FORMAT:
 
-        🛡️️ Ticket 1: Ironclad (40% of Daily Stake)
+        🛡️ Ticket 1: Ironclad (40% of Daily Stake)
         • [Match Name] ➔ [Allowed Market]
         • [Match Name] ➔ [Allowed Market]
         • [Match Name] ➔ [Allowed Market]
@@ -2111,7 +2111,7 @@ class ConsensusEngine:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
             for attempt in range(1, 3):
                 try:
-                    response = requests.post(url, json=payload, timeout=40)
+                    response = requests.post(url, json=payload, timeout=120)
                     if response.status_code == 200:
                         data = response.json()
                         candidate_text = (
