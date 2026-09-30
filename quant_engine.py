@@ -105,6 +105,25 @@ class ConsensusEngine:
         self.secondary_market_data = []
         self.golsinyali_session = tls_requests.Session(impersonate="chrome124")
 
+    def check_scraperapi_balance(self):
+        if not SCRAPER_API_KEY: 
+            return
+        try:
+            r = requests.get(f"http://api.scraperapi.com/account?api_key={SCRAPER_API_KEY}", timeout=15)
+            if r.status_code == 200:
+                data = r.json()
+                limit = data.get("requestLimit", 1)
+                used = data.get("requestCount", 0)
+                remaining = limit - used
+                self.diagnostics["ScraperAPICredits"] = f"🟢 OK ({remaining:,} remaining)"
+                
+                if remaining < 1000:
+                    self.send_telegram_alert(f"⚠️ **SCRAPERAPI ALERT: LOW BALANCE** ⚠️\nYou only have {remaining:,} API credits left out of {limit:,}. Top up soon to prevent engine failure.")
+            else:
+                self.diagnostics["ScraperAPICredits"] = "🔴 FAILED (Check API Dashboard)"
+        except Exception:
+            self.diagnostics["ScraperAPICredits"] = "🔴 OFFLINE"
+
     def normalize_prediction(self, raw_text):
         text = str(raw_text).strip().lower()
         if text in ["home", "home win", "h"]: return "1"
@@ -1596,6 +1615,7 @@ class ConsensusEngine:
 
                 if attempt == 1 and cfg.get("use_scraperapi") and SCRAPER_API_KEY:
                     if site_name in ["PredictZ", "WinDrawWin"]:
+                        # God Mode Proxy Tunnel for both Web-Groove sister sites
                         proxy_auth = f"scraperapi.premium=true.country_code=uk:{SCRAPER_API_KEY}"
                         proxy_url = f"http://{proxy_auth}@proxy-server.scraperapi.com:8001"
                         r = tls_requests.get(active_url, impersonate="chrome124", proxies={"http": proxy_url, "https": proxy_url}, timeout=45)
@@ -1623,10 +1643,14 @@ class ConsensusEngine:
                 last_status = r.status_code
 
                 if r.status_code == 200:
-                    challenge_phrases = ["just a moment", "cf-browser-verification", "checking your browser", "turnstile", "ray id", "security check", "verify you are human", "enable javascript", "attention required", "cloudflare"]
+                    # Raised len limit to 150000 to catch massive Cloudflare Turnstile blocks disguising as 200 OK
+                    challenge_phrases = [
+                        "just a moment", "cf-browser-verification", "checking your browser", 
+                        "turnstile", "ray id", "security check", "verify you are human", 
+                        "enable javascript", "attention required", "cloudflare", "ddos protection"
+                    ]
                     
-                    # Expanded char limit to 75000 to catch thick Cloudflare Turnstile pages masquerading as 200 OKs
-                    if any(phrase in r.text.lower() for phrase in challenge_phrases) and len(r.text) < 75000:
+                    if any(phrase in r.text.lower() for phrase in challenge_phrases) and len(r.text) < 150000:
                         if attempt < max_attempts:
                             time.sleep(2 * attempt)
                             continue
@@ -1637,7 +1661,11 @@ class ConsensusEngine:
                     
                     if site_name in ["PredictZ", "WinDrawWin"]:
                         prefix = "pt" if site_name == "PredictZ" else "wt"
-                        rows = soup.find_all("div", class_=re.compile(f"({prefix}tr|{prefix}row|match-row)", re.I))
+                        rows = soup.find_all("div", class_=re.compile(f"({prefix}tr|{prefix}row|match-row|pr-match)", re.I))
+                        if not rows:
+                            child_elems = soup.find_all("div", class_=re.compile(f"({prefix}tmobh|{prefix}tmoba|team1|team2)", re.I))
+                            if child_elems:
+                                rows = list(set([c.parent for c in child_elems if c.parent]))
                         if not rows:
                             rows = soup.find_all("tr")
                         if not rows:
@@ -1655,7 +1683,9 @@ class ConsensusEngine:
                         if attempt < max_attempts:
                             time.sleep(2 * attempt)
                             continue
-                        self.diagnostics[site_name] = "🟡 BLOCKED (No Match Rows Found)"
+                        
+                        page_title = soup.title.text.strip() if soup.title else "No Title"
+                        self.diagnostics[site_name] = f"🟡 BLOCKED (No Match Rows Found | Title: {page_title[:25]})"
                         return
 
                     valid_count = 0
@@ -1779,6 +1809,10 @@ class ConsensusEngine:
 
                     if valid_count > 0 or skipped_count > 0:
                         self.diagnostics[site_name] = f"🟢 OK ({valid_count} Upcoming | {skipped_count} Played)"
+                        return
+                    else:
+                        page_title = soup.title.text.strip() if soup.title else "No Title"
+                        self.diagnostics[site_name] = f"🟡 BLOCKED/EMPTY (0 parsed | Title: {page_title[:25]})"
                         return
 
                 if r.status_code in [403, 500, 502, 503, 504, 429]:
@@ -1946,11 +1980,14 @@ class ConsensusEngine:
                     if "generateContent" in m.get("supportedGenerationMethods", [])
                 ]
                 
-                # Filter out experimental/zero-quota models to guarantee success
+                # Exclude ALL audio, visual, live, and experimental variants
                 usable_flash = [
                     m for m in available 
                     if "flash" in m.lower() 
-                    and not any(x in m.lower() for x in ["preview", "thinking", "lite", "deep-research", "pro"])
+                    and not any(x in m.lower() for x in [
+                        "preview", "thinking", "lite", "deep-research", "pro",
+                        "tts", "live", "audio", "vision", "transcribe"
+                    ])
                 ]
                 if usable_flash:
                     return usable_flash
@@ -2085,7 +2122,7 @@ class ConsensusEngine:
         • [Match Name] ➔ [Allowed Market]
         ↳ Reserve: [Match Name] ➔ [Allowed Market]
 
-        ⚖️ Ticket 2: Balanced (10% of Daily Stake)
+        ⚖️️ Ticket 2: Balanced (10% of Daily Stake)
         • [Match Name] ➔ [Allowed Market]
         • [Match Name] ➔ [Allowed Market]
         • [Match Name] ➔ [Allowed Market]
@@ -2111,6 +2148,7 @@ class ConsensusEngine:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
             for attempt in range(1, 3):
                 try:
+                    # Bumped request timeout to 120s so Gemini has time to read data and write 4 tickets
                     response = requests.post(url, json=payload, timeout=120)
                     if response.status_code == 200:
                         data = response.json()
