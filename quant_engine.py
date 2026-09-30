@@ -17,7 +17,9 @@ TELEGRAM_TOKEN = os.environ.get("QUANT_TELEGRAM_TOKEN") or os.environ.get("TRACK
 TELEGRAM_CHAT_ID = os.environ.get("QUANT_TELEGRAM_CHAT_ID") or os.environ.get("TRACKER_TRACKER_TELEGRAM_CHAT_ID") or os.environ.get("TRACKER_TELEGRAM_CHAT_ID")
 SCRAPER_API_KEY = (os.environ.get("SCRAPER_API_KEY") or "").strip()
 GEMINI_API_KEY = (os.environ.get("GEMINI_API_KEY") or "").strip()
-FORCE_RUN = os.environ.get("FORCE_RUN", "").strip().lower() in ["true", "1", "yes"]
+
+# FORCED TO TRUE TO BREAK THE CACHE AND TEST THE FIXES
+FORCE_RUN = True 
 
 MEMORY_FILE = "pending_tickets.json"
 
@@ -1592,14 +1594,19 @@ class ConsensusEngine:
             try:
                 active_url = cfg.get("fallback_url") if (attempt == 3 and cfg.get("fallback_url")) else target_url
 
+                # FIX 2: Correcting the PredictZ proxy routing to mirror the successful WinDrawWin UK TLS tunnel
                 if attempt == 1 and cfg.get("use_scraperapi") and SCRAPER_API_KEY:
-                    proxy_url = f"http://api.scraperapi.com?api_key={SCRAPER_API_KEY}&url={active_url}"
                     if site_name in ["PredictZ", "WinDrawWin"]:
-                        # Fully route both sister sites through US nodes to bypass UK burnout
-                        proxy_url += "&premium=true&render=true&country_code=us"
+                        # God Mode Proxy Tunnel for BOTH sites
+                        proxy_auth = f"scraperapi.premium=true.country_code=uk:{SCRAPER_API_KEY}"
+                        proxy_url = f"http://{proxy_auth}@proxy-server.scraperapi.com:8001"
+                        r = tls_requests.get(active_url, impersonate="chrome124", proxies={"http": proxy_url, "https": proxy_url}, timeout=45)
                     elif site_name == "SoccerVista":
-                        proxy_url += "&premium=true&render=true"
-                    r = requests.get(proxy_url, timeout=75) 
+                        proxy_url = f"http://api.scraperapi.com?api_key={SCRAPER_API_KEY}&url={active_url}&premium=true&render=true"
+                        r = requests.get(proxy_url, timeout=75)
+                    else:
+                        proxy_url = f"http://api.scraperapi.com?api_key={SCRAPER_API_KEY}&url={active_url}"
+                        r = requests.get(proxy_url, timeout=75)
                 
                 elif attempt == 2:
                     r = tls_requests.get(active_url, impersonate="chrome124", headers=strict_headers, timeout=30)
@@ -1703,7 +1710,7 @@ class ConsensusEngine:
                                                 if text_chunk.strip().upper() in valid_picks:
                                                     pick = text_chunk.strip()
                                                     break
-                                                
+                                            
                             elif site_name == "SoccerVista":
                                 tds = row.find_all("td")
                                 if len(tds) >= 3:
@@ -1925,29 +1932,32 @@ class ConsensusEngine:
             fallback_active,
         )
 
+    # FIX 1: Overhauling Gemini Model Selection to blacklist zero-quota models
     def get_available_gemini_models(self, api_key):
         list_url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}"
         try:
             res = requests.get(list_url, timeout=15)
             if res.status_code == 200:
                 data = res.json()
-                available = []
-                for m in data.get("models", []):
-                    if "generateContent" in m.get("supportedGenerationMethods", []):
-                        name = m.get("name", "").replace("models/", "")
-                        if name:
-                            available.append(name)
+                available = [
+                    m.get("name", "").replace("models/", "")
+                    for m in data.get("models", [])
+                    if "generateContent" in m.get("supportedGenerationMethods", [])
+                ]
                 
-                preferred = [m for m in available if "flash" in m.lower() and not any(x in m.lower() for x in ["preview", "thinking", "lite"])]
-                fallback_flash = [m for m in available if "flash" in m.lower() and m not in preferred]
-                others = [m for m in available if m not in preferred and m not in fallback_flash]
-                
-                ordered = preferred + fallback_flash + others
-                if ordered:
-                    return ordered
+                # Strictly filter out deep-research, pro-preview, thinking, and embedding models
+                usable_flash = [
+                    m for m in available 
+                    if "flash" in m.lower() 
+                    and not any(x in m.lower() for x in ["preview", "thinking", "lite", "deep-research", "pro"])
+                ]
+                if usable_flash:
+                    return usable_flash
         except Exception:
             pass
-        return ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-flash-latest"]
+        
+        # Safe fallback standard tiers if the API call fails
+        return ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
 
     def ask_llm_to_optimize_tickets(
         self,
@@ -2069,7 +2079,7 @@ class ConsensusEngine:
 
         EXACT OUTPUT FORMAT:
 
-        🛡️ Ticket 1: Ironclad (40% of Daily Stake)
+        🛡️️ Ticket 1: Ironclad (40% of Daily Stake)
         • [Match Name] ➔ [Allowed Market]
         • [Match Name] ➔ [Allowed Market]
         • [Match Name] ➔ [Allowed Market]
@@ -2523,7 +2533,9 @@ class ConsensusEngine:
                 "fallback_threshold": fallback_threshold,
                 "tickets": structured_tickets
             }
-            self.save_memory(memory)
+            
+            if not FORCE_RUN:
+                self.save_memory(memory)
             
             if should_lock:
                 self.diagnostics["Daily_Lock"] = f"🟢 LOCKED NEW DATA FOR {today_date}"
