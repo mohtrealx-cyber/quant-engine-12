@@ -1031,5 +1031,16 @@
                 "score": "-"
             }
         ]
+    },
+    "2026-09-30": {
+        "locked": true,
+        "agreed_matches": [],
+        "core_matches_4plus": [],
+        "fallback_matches_3plus": [],
+        "fallback_active": true,
+        "ai_optimized_message": null,
+        "req_threshold": 4,
+        "fallback_threshold": 3,
+        "tickets": []
     }
 }
