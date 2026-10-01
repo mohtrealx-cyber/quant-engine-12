@@ -17,7 +17,7 @@ TELEGRAM_TOKEN = os.environ.get("QUANT_TELEGRAM_TOKEN") or os.environ.get("TRACK
 TELEGRAM_CHAT_ID = os.environ.get("QUANT_TELEGRAM_CHAT_ID") or os.environ.get("TRACKER_TRACKER_TELEGRAM_CHAT_ID") or os.environ.get("TRACKER_TELEGRAM_CHAT_ID")
 SCRAPER_API_KEY = (os.environ.get("SCRAPER_API_KEY") or "").strip()
 
-# KEEPING THIS TRUE FOR THE 2-TICKET TEST
+# KEEPING THIS TRUE FOR THE TEST
 FORCE_RUN = True 
 
 MEMORY_FILE = "pending_tickets.json"
@@ -116,7 +116,7 @@ class ConsensusEngine:
                 remaining = limit - used
                 self.diagnostics["ScraperAPICredits"] = f"🟢 OK ({remaining:,} remaining)"
             else:
-                self.diagnostics["ScraperAPICredits"] = "🔴 FAILED (Check API Dashboard)"
+                self.diagnostics["ScraperAPICredits"] = "🔴 FAILED"
         except Exception:
             self.diagnostics["ScraperAPICredits"] = "🔴 OFFLINE"
 
@@ -217,19 +217,19 @@ class ConsensusEngine:
                                         self.corner_stats[away_team] = highest_avg
                                         valid_corners += 1
                                         
-                    self.diagnostics["Corners_Engine"] = f"🟢 OK ({valid_corners} High-Corner Teams)"
+                    self.diagnostics["CornersEngine"] = f"🟢 OK ({valid_corners} High-Corner Teams)"
                     return
                 elif r.status_code in [403, 500, 502, 503, 504, 429]:
                     time.sleep(2 * attempt)
                     continue
                 else:
-                    self.diagnostics["Corners_Engine"] = f"🔴 FAILED (HTTP {r.status_code})"
+                    self.diagnostics["CornersEngine"] = f"🔴 FAILED (HTTP {r.status_code})"
                     return
             except Exception:
                 time.sleep(2 * attempt)
                 continue
 
-        self.diagnostics["Corners_Engine"] = "🔴 TIMEOUT/ERROR"
+        self.diagnostics["CornersEngine"] = "🔴 TIMEOUT/ERROR"
 
     # ==========================================================================
     # GOLSINYALI DEDICATED ADAPTER
@@ -430,7 +430,7 @@ class ConsensusEngine:
                 anchor_data.append((url, anchor.get_text(" ", strip=True)))
 
             if not anchor_data:
-                self.diagnostics["Golsinyali"] = "🟡 BLOCKED (No match links found)"
+                self.diagnostics["Golsinyali"] = "🟡 BLOCKED (No links found)"
                 return
 
             scored = []
@@ -491,10 +491,9 @@ class ConsensusEngine:
                 except Exception as exc:
                     failed_count += 1
 
-            self.diagnostics["Golsinyali_Detail"] = f"📊 Discovered: {len(anchor_data)} | Candidates: {len(candidates)} | Today predictions: {valid_count} | Matched: {matched_fixture_count} | New: {new_fixture_count} | Skipped: {skipped_count} | Failed: {failed_count}"
             if valid_count > 0: self.diagnostics["Golsinyali"] = f"🟢 OK ({valid_count} Today | {matched_fixture_count} Matched | {new_fixture_count} New | {skipped_count} Skipped | {failed_count} Failed)"
-            elif failed_count > 0 and skipped_count == 0: self.diagnostics["Golsinyali"] = f"🔴 FAILED ({failed_count} page requests failed)"
-            else: self.diagnostics["Golsinyali"] = f"🟡 NO USABLE PREDICTIONS ({skipped_count} Skipped | {failed_count} Failed)"
+            elif failed_count > 0 and skipped_count == 0: self.diagnostics["Golsinyali"] = f"🔴 FAILED ({failed_count} requests failed)"
+            else: self.diagnostics["Golsinyali"] = f"🟡 NO PREDICTIONS ({skipped_count} Skipped | {failed_count} Failed)"
         except Exception as exc:
             self.diagnostics["Golsinyali"] = f"🔴 FAILED ({exc})"
 
@@ -632,7 +631,6 @@ class ConsensusEngine:
             all_links = self._expected90_extract_match_links(hub_html)
 
             if not all_links:
-                self.diagnostics["Expected90_Detail"] = "📊 Discovered: 0 | Candidates: 0 | Today predictions: 0 | Matched: 0 | New: 0 | Skipped: 0 | Failed: 0"
                 self.diagnostics["Expected90"] = "🟡 NO MATCH LINKS FOUND"
                 return
 
@@ -702,10 +700,9 @@ class ConsensusEngine:
                 except Exception as exc:
                     failed_count += 1
 
-            self.diagnostics["Expected90_Detail"] = f"📊 Discovered: {len(all_links)} | Candidates: {len(candidates)} | Today predictions: {valid_count} | Matched: {matched_fixture_count} | New: {new_fixture_count} | Skipped: {skipped_count} | Failed: {failed_count}"
             if valid_count > 0: self.diagnostics["Expected90"] = f"🟢 OK ({valid_count} Today | {matched_fixture_count} Matched | {new_fixture_count} New | {skipped_count} Skipped | {failed_count} Failed)"
-            elif failed_count > 0: self.diagnostics["Expected90"] = f"🔴 FAILED ({failed_count} page requests failed)"
-            else: self.diagnostics["Expected90"] = f"🟡 NO USABLE PREDICTIONS ({skipped_count} Skipped)"
+            elif failed_count > 0: self.diagnostics["Expected90"] = f"🔴 FAILED ({failed_count} requests failed)"
+            else: self.diagnostics["Expected90"] = f"🟡 NO PREDICTIONS ({skipped_count} Skipped)"
         except Exception as exc:
             self.diagnostics["Expected90"] = f"🔴 FAILED ({exc})"
 
@@ -857,9 +854,8 @@ class ConsensusEngine:
                 else: new_count += 1
 
             self.secondary_market_data.extend(secondary_records)
-            self.diagnostics["SoccerAiTips_Detail"] = f"📊 Discovered: {len(matches)} | Today markets: {valid_count} | Matched: {matched_count} | New: {new_count} | Skipped: {skipped_count} | Failed: {failed_count}"
             if valid_count > 0: self.diagnostics["SoccerAiTips"] = f"🟢 OK ({valid_count} Secondary Markets | {matched_count} Matched | {new_count} New | {skipped_count} Skipped | {failed_count} Failed)"
-            elif failed_count > 0: self.diagnostics["SoccerAiTips"] = f"🔴 FAILED ({failed_count} Invalid/failed records)"
+            elif failed_count > 0: self.diagnostics["SoccerAiTips"] = f"🔴 FAILED ({failed_count} Invalid records)"
             else: self.diagnostics["SoccerAiTips"] = f"🟡 NO USABLE SECONDARY MARKETS ({skipped_count} Skipped)"
         except Exception as exc:
             self.diagnostics["SoccerAiTips"] = f"🔴 FAILED ({exc})"
@@ -953,10 +949,6 @@ class ConsensusEngine:
             extracted.append({
                 "home_team": home_team,
                 "away_team": away_team,
-                "competition": cls._nvtips_clean_text(row.get("data-league", "")),
-                "country": cls._nvtips_clean_text(row.get("data-country", "")),
-                "source_time": cls._nvtips_clean_text(row.get("data-time", "")),
-                "probabilities": probabilities,
                 "prediction": prediction,
             })
         return extracted
@@ -991,8 +983,6 @@ class ConsensusEngine:
                 except Exception as exc:
                     failed_count += 1
 
-            self.diagnostics["NVtips_Detail"] = f"📊 Discovered: {len(rows)} | Today predictions: {valid_count} | Matched: {matched_fixture_count} | New: {new_fixture_count} | Skipped: {skipped_count} | Failed: {failed_count}"
-
             if valid_count > 0: self.diagnostics["NVtips"] = f"🟢 OK ({valid_count} Today | {matched_fixture_count} Matched | {new_fixture_count} New | {skipped_count} Skipped | {failed_count} Failed)"
             elif failed_count > 0: self.diagnostics["NVtips"] = f"🔴 FAILED ({failed_count} row processing failures)"
             else: self.diagnostics["NVtips"] = f"🟡 NO USABLE PREDICTIONS ({len(rows)} Rows)"
@@ -1003,22 +993,18 @@ class ConsensusEngine:
         if site_name == "Golsinyali":
             self.fetch_golsinyali_sync()
             return
-
         if site_name == "Expected90":
             self.fetch_expected90_sync()
             return
-
         if site_name == "SoccerAiTips":
             self.fetch_socceraitips_sync()
             return
-
         if site_name == "NVtips":
             self.fetch_nvtips_sync()
             return
 
         max_attempts = 4
-        # FIX: Increased timeout to 100s so ScraperAPI has plenty of time to solve Cloudflare JS
-        req_timeout = 100
+        req_timeout = 90
         last_status = None
         target_url = cfg["url"]
 
@@ -1038,15 +1024,21 @@ class ConsensusEngine:
                 r = None
 
                 # =======================================================
-                # ADAPTIVE MULTI-NODE WATERFALL ROUTING WITH CLOUDFLARE JS BYPASS
+                # EXACT TITAN 1 WATERFALL ROUTING (Proven to bypass 403s)
                 # =======================================================
-                if site_name in ["WinDrawWin", "SoccerVista"]:
+                if site_name == "WinDrawWin":
+                    if attempt == 1 and SCRAPER_API_KEY:
+                        r = requests.get("http://api.scraperapi.com/", params={"api_key": SCRAPER_API_KEY, "url": active_url, "premium": "true", "country_code": "uk"}, timeout=req_timeout)
+                    elif attempt == 2 and SCRAPER_API_KEY:
+                        r = requests.get("http://api.scraperapi.com/", params={"api_key": SCRAPER_API_KEY, "url": active_url, "premium": "true", "country_code": "us"}, timeout=req_timeout)
+                    elif attempt == 3:
+                        r = tls_requests.get(active_url, impersonate="chrome124", timeout=req_timeout)
+                    elif attempt == 4 and SCRAPER_API_KEY:
+                        r = requests.get("http://api.scraperapi.com/", params={"api_key": SCRAPER_API_KEY, "url": active_url, "premium": "true"}, timeout=req_timeout)
+                elif site_name == "SoccerVista":
                     if attempt <= 3 and SCRAPER_API_KEY:
-                        # 'antibot=true' is the premium ScraperAPI solution for Turnstile
-                        params = {"api_key": SCRAPER_API_KEY, "url": active_url, "premium": "true", "antibot": "true"}
-                        if attempt == 1:
-                            params["country_code"] = "uk"
-                        r = requests.get("http://api.scraperapi.com/", params=params, timeout=req_timeout)
+                        # render=true fixes the HTTP 200 blank page issue
+                        r = requests.get("http://api.scraperapi.com/", params={"api_key": SCRAPER_API_KEY, "url": active_url, "premium": "true", "render": "true"}, timeout=req_timeout)
                     else:
                         r = tls_requests.get(active_url, impersonate="chrome124", timeout=req_timeout)
                 else:
@@ -1279,48 +1271,32 @@ class ConsensusEngine:
         fallback_ai_input_data = []
 
         all_scrapers = [
-            "Golsinyali",
-            "Expected90",
-            "Statarea",
-            "Vitibet",
-            "Zulubet", 
-            "WinDrawWin",
-            "SoccerVista",
-            "NVtips",
+            "Golsinyali", "Expected90", "Statarea", "Vitibet",
+            "Zulubet", "WinDrawWin", "SoccerVista", "NVtips"
         ]
 
         required_consensus = 4
         fallback_consensus = 3
-        min_core_matches_for_full_ticket_pool = 12
+        min_core_matches = 6
 
-        def build_match_record(match, listings, top_pick, tier_label):
-            prediction_weights = {}
+        def build_match_record(match, listings, top_pick):
             sites_backing = {}
             for site, pick in listings:
-                prediction_weights[pick] = prediction_weights.get(pick, 0) + 1
                 sites_backing.setdefault(pick, []).append(site)
 
             backing_sites_list = sites_backing[top_pick]
             backing_sites_str = " + ".join(backing_sites_list)
             contradictions = []
 
-            match_text = (
-                f"• **{match}** ➔ {top_pick}\n"
-                f"  ↳ ✅ Backed by: `{backing_sites_str}`\n"
-            )
+            match_text = f"• **{match}** ➔ {top_pick}\n  ↳ ✅ Backed by: `{backing_sites_str}`\n"
 
-            left_out_sites = [
-                site for site in all_scrapers
-                if site not in backing_sites_list
-            ]
-
+            left_out_sites = [s for s in all_scrapers if s not in backing_sites_list]
             for left_out in left_out_sites:
                 other_pick = None
                 for pick, sites in sites_backing.items():
                     if pick != top_pick and left_out in sites:
                         other_pick = pick
                         break
-
                 if other_pick:
                     match_text += f"  ↳ ⚠️ {left_out} backed: {other_pick}\n"
                     contradictions.append(f"{left_out} ({other_pick})")
@@ -1331,56 +1307,32 @@ class ConsensusEngine:
                 "match": match,
                 "consensus_pick": top_pick,
                 "agreement_count": len(backing_sites_list),
-                "backed_by": backing_sites_str,
                 "contradictions": contradictions,
-                "tier": tier_label,
             }
 
             return match_text, ai_record
 
         for match, listings in self.master_matrix.items():
-            if not listings:
-                continue
-
+            if not listings: continue
             prediction_weights = {}
-            sites_backing = {}
-
             for site, pick in listings:
                 prediction_weights[pick] = prediction_weights.get(pick, 0) + 1
-                sites_backing.setdefault(pick, []).append(site)
-
-            if not prediction_weights:
-                continue
+            if not prediction_weights: continue
 
             top_pick = max(prediction_weights, key=prediction_weights.get)
             top_count = prediction_weights[top_pick]
 
             if top_count >= required_consensus:
-                match_text, ai_record = build_match_record(
-                    match, listings, top_pick, "Core Consensus (4+)"
-                )
+                match_text, ai_record = build_match_record(match, listings, top_pick)
                 core_matches.append(match_text)
                 core_ai_input_data.append(ai_record)
-                structured_tickets.append({
-                    "match": match,
-                    "prediction": top_pick,
-                    "status": "PENDING",
-                    "score": "-",
-                })
-
+                structured_tickets.append({"match": match, "prediction": top_pick, "status": "PENDING", "score": "-"})
             elif top_count >= fallback_consensus:
-                match_text, ai_record = build_match_record(
-                    match, listings, top_pick, "Research Candidate (3+)"
-                )
+                match_text, ai_record = build_match_record(match, listings, top_pick)
                 fallback_matches.append(match_text)
                 fallback_ai_input_data.append(ai_record)
 
-        fallback_active = len(core_ai_input_data) < min_core_matches_for_full_ticket_pool
-
-        self.diagnostics["Core_4Plus"] = f"🟢 {len(core_ai_input_data)} qualified matches"
-        self.diagnostics["Fallback_3Plus"] = f"{'🟡 ACTIVE' if fallback_active else '⚪ STANDBY'} ({len(fallback_ai_input_data)} research candidates)"
-        self.diagnostics["Consensus_Mode"] = "🔬 DEEP RESEARCH FALLBACK (3+)" if fallback_active else "🛡️ STRICT CORE ONLY (4+)"
-        self.diagnostics["Ticket_Pool_Requirement"] = f"2 Tickets × 3 primary = 6 slots | Reserve pool = {len(fallback_ai_input_data)} candidates"
+        fallback_active = len(core_ai_input_data) < min_core_matches
 
         return (
             core_matches,
@@ -1395,12 +1347,9 @@ class ConsensusEngine:
 
     # ======================================================================
     # PURE PYTHON ALGORITHMIC TICKET BUILDER
-    # (Exactly 2 Balanced Tickets | 50% Stake Each | Draws to Reserve ONLY)
+    # Exactly 2 Balanced Tickets | 50% Stake Each | Draws to Reserve ONLY
     # ======================================================================
     def build_algorithmic_ticket(self, core_data, fallback_data, active_corner_teams):
-        self.diagnostics["AI_Handshake"] = "🟢 ALGORITHMIC ENGINE ENABLED (AI BYPASSED)"
-        self.diagnostics["AI_Status"] = "🟢 Optimization Complete (Native Python Sorting - 2 Tickets)"
-
         combined_data = core_data + fallback_data
         
         def get_score(match_data):
@@ -1410,13 +1359,10 @@ class ConsensusEngine:
 
         sorted_matches = sorted(combined_data, key=get_score, reverse=True)
         
-        # Strictly segregate Home/Away Wins vs Draws (X)
         main_candidates = [m for m in sorted_matches if m['consensus_pick'] in ["1", "2"]]
         draw_candidates = [m for m in sorted_matches if m['consensus_pick'] == "X"]
         
         final_main_picks = []
-        
-        # Try to gather exactly 6 safe wins for our 2 tickets (3 each)
         for m in main_candidates:
             pick_str = f"{m['match']} ➔ {m['consensus_pick']}"
             if pick_str not in final_main_picks:
@@ -1424,7 +1370,6 @@ class ConsensusEngine:
             if len(final_main_picks) == 6:
                 break
                 
-        # If we fall short of 6 main picks, securely fill with Corners to maintain safety
         if len(final_main_picks) < 6:
             for corner in active_corner_teams:
                 corner_pick = f"{corner['match']} ➔ Over 8.5 Corners (Avg: {corner['avg_corners']})"
@@ -1433,7 +1378,6 @@ class ConsensusEngine:
                 if len(final_main_picks) == 6:
                     break
         
-        # Build Reserve Picks (Priority: High-Agreement Draws -> Leftover Wins -> Corners)
         reserve_picks = []
         for d in draw_candidates:
             pick_str = f"{d['match']} ➔ {d['consensus_pick']}"
@@ -1458,7 +1402,6 @@ class ConsensusEngine:
                 if len(reserve_picks) == 2:
                     break
 
-        # Abort cleanly if there is a severe lack of data across the board
         if len(final_main_picks) < 3:
             return "No high-conviction matches found today to safely build tickets."
             
@@ -1468,21 +1411,16 @@ class ConsensusEngine:
         reserve1 = reserve_picks[0] if len(reserve_picks) > 0 else None
         reserve2 = reserve_picks[1] if len(reserve_picks) > 1 else None
         
-        # Structure the final Telegram output
         ticket_text = "🤖 **TITAN ALGORITHMIC TICKETS** 🤖\n\n"
         
         ticket_text += "🛡️ **Ticket 1: Premium Slip (50% of Daily Stake)**\n"
-        for pick in ticket1_mains:
-            ticket_text += f"• {pick}\n"
-        if reserve1:
-            ticket_text += f"🔄 [RESERVE PICK]: {reserve1}\n"
+        for pick in ticket1_mains: ticket_text += f"• {pick}\n"
+        if reserve1: ticket_text += f"🔄 [RESERVE PICK]: {reserve1}\n"
             
         if ticket2_mains:
             ticket_text += "\n🛡️ **Ticket 2: Premium Slip (50% of Daily Stake)**\n"
-            for pick in ticket2_mains:
-                ticket_text += f"• {pick}\n"
-            if reserve2:
-                ticket_text += f"🔄 [RESERVE PICK]: {reserve2}\n"
+            for pick in ticket2_mains: ticket_text += f"• {pick}\n"
+            if reserve2: ticket_text += f"🔄 [RESERVE PICK]: {reserve2}\n"
                 
         return ticket_text
 
@@ -1526,7 +1464,6 @@ class ConsensusEngine:
     def settle_pending_tickets(self, memory):
         settled_reports = []
         needs_save = False
-
         dates_to_check = set()
         for date_str, payload in memory.items():
             tickets = payload if isinstance(payload, list) else payload.get("tickets", [])
@@ -1546,13 +1483,11 @@ class ConsensusEngine:
                 if t.get("status") == "PENDING":
                     match_key = t["match"]
                     prediction = t["prediction"]
-
                     score = None
                     for res_key, res_score in results_matrix.items():
                         if res_key.lower() == match_key.lower():
                             score = res_score
                             break
-
                     if score:
                         try:
                             home_g, away_g = map(int, score.split("-"))
@@ -1565,15 +1500,10 @@ class ConsensusEngine:
 
                             t["score"] = score
                             needs_save = True
-
-                            settled_reports.append(
-                                f"• **{match_key}** ➔ **{t['status']}** (Score: {score})"
-                            )
+                            settled_reports.append(f"• **{match_key}** ➔ **{t['status']}** (Score: {score})")
                         except Exception: pass
 
-        if needs_save:
-            self.save_memory(memory)
-
+        if needs_save: self.save_memory(memory)
         return settled_reports
 
     def send_telegram_alert(self, msg):
@@ -1611,90 +1541,37 @@ class ConsensusEngine:
             if today_payload.get("locked"):
                 is_already_locked = True
 
-        if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
-            self.diagnostics["Telegram"] = "🟡 NOT CONFIGURED (Secrets missing)"
-        else:
-            self.diagnostics["Telegram"] = "🟢 CONFIGURED"
-
-        if SCRAPER_API_KEY:
-            self.diagnostics["ScraperAPI"] = "🟢 CONFIGURED"
-        else:
-            self.diagnostics["ScraperAPI"] = "🟡 NOT CONFIGURED (Direct requests only)"
-
-        self.diagnostics["Gemini"] = "⚪ DISABLED (Using Native Algorithmic Sorter)"
+        if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID: self.diagnostics["Telegram"] = "🟡 NOT CONFIGURED"
+        else: self.diagnostics["Telegram"] = "🟢 CONFIGURED"
 
         if is_already_locked:
-            print(f"🔒 Data for {today_date} is already securely locked. Bypassing scrapers to conserve ScraperAPI tokens.")
+            print(f"🔒 Data for {today_date} is securely locked. Bypassing scrapers to conserve tokens.")
             daily_data = memory[today_date]
             agreed_matches = daily_data.get("core_matches_4plus") or daily_data.get("agreed_matches", [])
             algorithmic_message = daily_data.get("ai_optimized_message")
             req_threshold = daily_data.get("req_threshold", 4)
-            fallback_active = daily_data.get("fallback_active", False)
-
-            self.diagnostics["Consensus_Mode"] = (
-                "🔬 DEEP RESEARCH FALLBACK (3+)"
-                if fallback_active
-                else "🛡️ STRICT CORE ONLY (4+)"
-            )
-            self.diagnostics["Consensus_Pool"] = (
-                f"Cached | 4+ Core: {len(daily_data.get('core_matches_4plus', []))} | "
-                f"3+ Research: {len(daily_data.get('fallback_matches_3plus', []))} | "
-                f"Fallback Active: {'YES' if fallback_active else 'NO'}"
-            )
             self.diagnostics["Daily_Lock"] = f"🟢 CACHED (Tokens Saved for {today_date})"
         else:
             print(f"🔓 Scraping and generating fresh Algorithmic Tickets for {today_date}...")
+            self.check_scraperapi_balance()
             loop = asyncio.get_running_loop()
             with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:
                 base_tasks = [
-                    loop.run_in_executor(
-                        pool,
-                        self.fetch_and_scrape_sync,
-                        n,
-                        c,
-                    )
+                    loop.run_in_executor(pool, self.fetch_and_scrape_sync, n, c)
                     for n, c in self.configs.items()
                     if n not in {"Golsinyali", "Expected90", "NVtips", "SoccerAiTips"}
                 ]
-                base_tasks.append(
-                    loop.run_in_executor(
-                        pool,
-                        self.fetch_corners_sync,
-                    )
-                )
+                base_tasks.append(loop.run_in_executor(pool, self.fetch_corners_sync))
                 await asyncio.gather(*base_tasks)
 
                 if "Golsinyali" in self.configs:
-                    await loop.run_in_executor(
-                        pool,
-                        self.fetch_and_scrape_sync,
-                        "Golsinyali",
-                        self.configs["Golsinyali"],
-                    )
-
+                    await loop.run_in_executor(pool, self.fetch_and_scrape_sync, "Golsinyali", self.configs["Golsinyali"])
                 if "Expected90" in self.configs:
-                    await loop.run_in_executor(
-                        pool,
-                        self.fetch_and_scrape_sync,
-                        "Expected90",
-                        self.configs["Expected90"],
-                    )
-
+                    await loop.run_in_executor(pool, self.fetch_and_scrape_sync, "Expected90", self.configs["Expected90"])
                 if "SoccerAiTips" in self.configs:
-                    await loop.run_in_executor(
-                        pool,
-                        self.fetch_and_scrape_sync,
-                        "SoccerAiTips",
-                        self.configs["SoccerAiTips"],
-                    )
-
+                    await loop.run_in_executor(pool, self.fetch_and_scrape_sync, "SoccerAiTips", self.configs["SoccerAiTips"])
                 if "NVtips" in self.configs:
-                    await loop.run_in_executor(
-                        pool,
-                        self.fetch_and_scrape_sync,
-                        "NVtips",
-                        self.configs["NVtips"],
-                    )
+                    await loop.run_in_executor(pool, self.fetch_and_scrape_sync, "NVtips", self.configs["NVtips"])
 
             (
                 core_matches,
@@ -1707,13 +1584,7 @@ class ConsensusEngine:
                 fallback_active,
             ) = self.process_consensus_signals()
 
-            agreed_matches = core_matches
-
-            self.diagnostics["Consensus_Pool"] = (
-                f"4+ Core: {len(core_ai_input_data)} | "
-                f"3+ Research: {len(fallback_ai_input_data)} | "
-                f"Fallback Active: {'YES' if fallback_active else 'NO'}"
-            )
+            agreed_matches = core_matches if core_matches else fallback_matches
 
             active_corner_teams = []
             for match in self.master_matrix.keys():
@@ -1727,19 +1598,9 @@ class ConsensusEngine:
 
             algorithmic_message = None
             if core_ai_input_data or fallback_ai_input_data or active_corner_teams:
-                algorithmic_message = self.build_algorithmic_ticket(
-                    core_ai_input_data,
-                    fallback_ai_input_data,
-                    active_corner_teams
-                )
+                algorithmic_message = self.build_algorithmic_ticket(core_ai_input_data, fallback_ai_input_data, active_corner_teams)
 
-            should_lock = (
-                current_hour >= 5
-                and (
-                    algorithmic_message is not None
-                    or (not core_ai_input_data and not fallback_ai_input_data)
-                )
-            )
+            should_lock = (current_hour >= 5) and (algorithmic_message is not None or not (core_ai_input_data or fallback_ai_input_data))
 
             memory[today_date] = {
                 "locked": should_lock,
@@ -1753,77 +1614,34 @@ class ConsensusEngine:
                 "tickets": structured_tickets
             }
             
-            if not FORCE_RUN:
-                self.save_memory(memory)
+            if not FORCE_RUN: self.save_memory(memory)
             
-            if should_lock:
-                self.diagnostics["Daily_Lock"] = f"🟢 LOCKED NEW DATA FOR {today_date}"
-            else:
-                self.diagnostics["Daily_Lock"] = f"⏳ PREVIEW (Will Lock At 05:00 EAT)"
+            if should_lock: self.diagnostics["Daily_Lock"] = f"🟢 LOCKED NEW DATA FOR {today_date}"
+            else: self.diagnostics["Daily_Lock"] = f"⏳ PREVIEW (Will Lock At 05:00 EAT)"
 
         settled_reports = self.settle_pending_tickets(memory)
 
-        print("\n==========================================")
-        print("SCRAPER / ENGINE DIAGNOSTICS")
-        print("==========================================")
-        for site, status in self.diagnostics.items():
-            print(f"↳ {site}: {status}")
-
-        print("\n==========================================")
-        print(f"MASTER MATRIX MATCHES: {len(self.master_matrix)}")
-        if self.master_matrix:
-            for match, listings in self.master_matrix.items():
-                sources = ", ".join(
-                    f"{site}={pick}" for site, pick in listings
-                )
-                print(f"• {match} -> {sources}")
-        else:
-            print("No matches entered the consensus matrix.")
-        print("==========================================\n")
-
-        print("==========================================")
-        print(f"SECONDARY MARKET SIGNALS: {len(self.secondary_market_data)}")
-        if self.secondary_market_data:
-            for record in self.secondary_market_data:
-                print(
-                    f"• {record['match']} -> "
-                    f"{record['market']}={record['selection']} "
-                    f"({record.get('display_time') or 'time n/a'})"
-                )
-        else:
-            print("No SoccerAiTips secondary-market signals collected.")
-        print("==========================================\n")
-
         if not is_already_locked or settled_reports:
-            if self.diagnostics.get("Consensus_Mode", "").startswith("🔬"):
-                msg = "🤝 **RAW CONSENSUS DATA (4+ SITES AGREEMENT)** 🤝\n\n"
-                if agreed_matches:
-                    for match in agreed_matches:
-                        msg += f"{match}\n"
-                else:
-                    msg += "No matches found with 4+ sites in agreement today.\n\n"
-
-                msg += (
-                    "\n🔬 **DEEP RESEARCH FALLBACK ACTIVE** 🔬\n"
-                    "The 4+ pool contains fewer than four usable matches, "
-                    "so the algorithm is pulling from the 3+ research pool.\n\n"
-                )
-
+            msg = "🤝 **RAW CONSENSUS DATA** 🤝\n\n"
+            if agreed_matches:
+                for match in agreed_matches:
+                    msg += f"{match}\n"
             else:
-                msg = "🤝 **RAW CONSENSUS DATA (4+ SITES AGREEMENT)** 🤝\n\n"
-                if not agreed_matches:
-                    msg += "No matches found with 4+ sites in agreement today.\n\n"
-                else:
-                    for match in agreed_matches:
-                        msg += f"{match}\n"
+                msg += "No matches found with required agreement today.\n\n"
 
             if settled_reports:
-                msg += "📊 **SETTLED RESULTS (Newly Finalized)** 📊\n\n"
+                msg += "📊 **SETTLED RESULTS** 📊\n\n"
                 for rep in settled_reports: msg += f"{rep}\n"
                 msg += "\n"
 
             msg += "⚙️ **SCRAPER STATUS** ⚙️\n"
-            for site, status in self.diagnostics.items(): msg += f"↳ {site}: {status}\n"
+            essential_keys = ["Telegram", "ScraperAPICredits", "Statarea", "Vitibet", "Zulubet", "WinDrawWin", "SoccerVista", "CornersEngine", "Golsinyali", "Expected90", "SoccerAiTips", "NVtips"]
+            for k in essential_keys:
+                if k in self.diagnostics:
+                    msg += f"↳ {k}: {self.diagnostics[k]}\n"
+            
+            if "Daily_Lock" in self.diagnostics:
+                msg += f"↳ DailyLock: {self.diagnostics['Daily_Lock']}\n"
 
             self.send_telegram_alert(msg)
 
