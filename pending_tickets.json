@@ -1042,5 +1042,12 @@
         "req_threshold": 4,
         "fallback_threshold": 3,
         "tickets": []
+    },
+    "2026-10-02": {
+        "locked": false,
+        "agreed_matches": [],
+        "ai_optimized_message": "\ud83e\udd16 **TITAN ALGORITHMIC TICKETS** \ud83e\udd16\n\n\ud83d\udee1\ufe0f **Ticket 1: Premium Slip (50% of Daily Stake)**\n\u2022 Seattle Sounders vs Sporting Kansas City \u2794 Over 8.5 Corners (Avg: 10.5)\n\u2022 Us Virgin Islands vs Saint Martin \u2794 Over 8.5 Corners (Avg: 9.5)\n\u2022 Fuerte San Francisco vs Firpo \u2794 Over 8.5 Corners (Avg: 9.5)\n\n\ud83d\udee1\ufe0f **Ticket 2: Premium Slip (50% of Daily Stake)**\n\u2022 Athletic Club vs Sport Recife \u2794 Over 8.5 Corners (Avg: 10.0)\n",
+        "req_threshold": 3,
+        "tickets": []
     }
 }
