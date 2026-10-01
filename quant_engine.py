@@ -15,9 +15,8 @@ from curl_cffi import requests as tls_requests
 # ==============================================================================
 TELEGRAM_TOKEN = os.environ.get("QUANT_TELEGRAM_TOKEN") or os.environ.get("TRACKER_TRACKER_TELEGRAM_TOKEN") or os.environ.get("TRACKER_TELEGRAM_TOKEN")
 TELEGRAM_CHAT_ID = os.environ.get("QUANT_TELEGRAM_CHAT_ID") or os.environ.get("TRACKER_TRACKER_TELEGRAM_CHAT_ID") or os.environ.get("TRACKER_TELEGRAM_CHAT_ID")
-SCRAPER_API_KEY = (os.environ.get("SCRAPER_API_KEY") or "").strip()
 
-# KEEPING THIS TRUE TO FORCE A FRESH SWEEP
+# KEEPING THIS TRUE FOR THE TEST RUN
 FORCE_RUN = True 
 
 MEMORY_FILE = "pending_tickets.json"
@@ -28,31 +27,10 @@ def get_dynamic_configs():
     cb = int(time.time())
 
     return {
-        "Statarea": {
-            "url": f"https://www.statarea.com/predictions/date/{today_date}/",
-            "fallback_url": None,
-            "use_scraperapi": False  
-        },
-        "Vitibet": {
-            "url": f"https://www.vitibet.com/index.php?clanek=quicktips&sekce=fotbal&lang=en&cb={cb}",
-            "fallback_url": None,
-            "use_scraperapi": False
-        },
-        "Zulubet": {  
-            "url": "https://www.zulubet.com/",
-            "fallback_url": "http://www.zulubet.com/",
-            "use_scraperapi": False 
-        },
-        "WinDrawWin": {
-            "url": "https://www.windrawwin.com/predictions/today/",
-            "fallback_url": "https://www.windrawwin.com/predictions/",
-            "use_scraperapi": True
-        },
-        "SoccerVista": {
-            "url": "https://www.soccervista.com/",
-            "fallback_url": "https://www.soccervista.com/predictions/",
-            "use_scraperapi": True
-        }
+        "Statarea": {"url": f"https://www.statarea.com/predictions/date/{today_date}/"},
+        "Vitibet": {"url": f"https://www.vitibet.com/index.php?clanek=quicktips&sekce=fotbal&lang=en&cb={cb}"},
+        "Zulubet": {"url": "https://www.zulubet.com/"},
+        "WinDrawWin": {"url": "https://www.windrawwin.com/predictions/today/"}
     }
 
 class ConsensusEngine:
@@ -61,22 +39,6 @@ class ConsensusEngine:
         self.master_matrix = {}
         self.corner_stats = {}
         self.diagnostics = {}
-
-    def check_scraperapi_balance(self):
-        if not SCRAPER_API_KEY: 
-            return
-        try:
-            r = requests.get(f"http://api.scraperapi.com/account?api_key={SCRAPER_API_KEY}", timeout=15)
-            if r.status_code == 200:
-                data = r.json()
-                limit = data.get("requestLimit", 1)
-                used = data.get("requestCount", 0)
-                remaining = limit - used
-                self.diagnostics["ScraperAPICredits"] = f"🟢 OK ({remaining:,} remaining)"
-            else:
-                self.diagnostics["ScraperAPICredits"] = "🔴 FAILED (Check API Dashboard)"
-        except Exception:
-            self.diagnostics["ScraperAPICredits"] = "🔴 OFFLINE"
 
     def normalize_prediction(self, raw_text):
         text = str(raw_text).strip().lower()
@@ -133,7 +95,7 @@ class ConsensusEngine:
         url = "https://www.totalcorner.com/match/today"
         for attempt in range(1, 4):
             try:
-                r = tls_requests.get(url, impersonate="chrome124", timeout=25)
+                r = tls_requests.get(url, impersonate="chrome124", timeout=20)
                 if r.status_code == 200:
                     soup = BeautifulSoup(r.content, 'html.parser')
                     rows = soup.find_all("tr")
@@ -170,58 +132,50 @@ class ConsensusEngine:
 
     def fetch_and_scrape_sync(self, site_name, cfg):
         max_attempts = 4
-        req_timeout = 90 
+        req_timeout = 25 
         last_status = "TIMEOUT"
         target_url = cfg["url"]
 
+        # Rotating TLS Arsenal to pierce Cloudflare natively
+        tls_profiles = ["chrome124", "safari17_0", "chrome120", "safari15_5"]
+
         strict_headers = {
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
             "Accept-Language": "en-US,en;q=0.9",
-            "Upgrade-Insecure-Requests": "1",
             "Sec-Fetch-Dest": "document",
             "Sec-Fetch-Mode": "navigate",
             "Sec-Fetch-Site": "none",
-            "Sec-Fetch-User": "?1"
+            "Sec-Fetch-User": "?1",
+            "Upgrade-Insecure-Requests": "1"
         }
 
         for attempt in range(1, max_attempts + 1):
             try:
-                active_url = cfg.get("fallback_url") if (attempt >= 3 and cfg.get("fallback_url")) else target_url
-                r = None
-
-                # =======================================================
-                # EXACT TITAN 1 WATERFALL ROUTING (Proven to bypass 403s & 500s)
-                # =======================================================
-                if site_name == "WinDrawWin":
-                    if attempt == 1 and SCRAPER_API_KEY:
-                        r = requests.get("http://api.scraperapi.com/", params={"api_key": SCRAPER_API_KEY, "url": active_url, "premium": "true", "country_code": "uk", "render": "true"}, timeout=req_timeout)
-                    elif attempt == 2 and SCRAPER_API_KEY:
-                        r = requests.get("http://api.scraperapi.com/", params={"api_key": SCRAPER_API_KEY, "url": active_url, "premium": "true", "antibot": "true"}, timeout=req_timeout)
-                    elif attempt == 3 and SCRAPER_API_KEY:
-                        r = requests.get("http://api.scraperapi.com/", params={"api_key": SCRAPER_API_KEY, "url": active_url, "premium": "true", "render": "true"}, timeout=req_timeout)
-                    elif attempt == 4:
-                        r = tls_requests.get(active_url, impersonate="chrome124", timeout=req_timeout)
+                active_url = target_url
                 
-                elif site_name == "SoccerVista":
-                    if attempt <= 3 and SCRAPER_API_KEY:
-                        r = requests.get("http://api.scraperapi.com/", params={"api_key": SCRAPER_API_KEY, "url": active_url, "premium": "true", "render": "true"}, timeout=req_timeout)
-                    else:
-                        r = tls_requests.get(active_url, impersonate="chrome124", timeout=req_timeout)
+                # =======================================================
+                # THE TWIN-SITE CLOUDFLARE DODGE
+                # =======================================================
+                # WinDrawWin and PredictZ share the exact same backend database. 
+                # If WinDrawWin blocks us on attempts 1 & 2, we instantly switch targets to PredictZ for 3 & 4.
+                if site_name == "WinDrawWin" and attempt > 2:
+                    active_url = "https://www.predictz.com/predictions/"
+
+                current_profile = tls_profiles[(attempt - 1) % len(tls_profiles)]
+                r = tls_requests.get(
+                    active_url, 
+                    impersonate=current_profile, 
+                    headers=strict_headers, 
+                    timeout=req_timeout
+                )
                 
-                else:
-                    use_proxy = cfg.get("use_scraperapi") and bool(SCRAPER_API_KEY)
-                    if use_proxy:
-                        r = requests.get("http://api.scraperapi.com/", params={"api_key": SCRAPER_API_KEY, "url": active_url, "premium": "true"}, timeout=req_timeout)
-                    else:
-                        r = tls_requests.get(active_url, impersonate="safari17_0", headers=strict_headers, timeout=30)
+                last_status = r.status_code
 
-                last_status = r.status_code if r else "TIMEOUT"
-
-                if r and r.status_code == 200:
+                if r.status_code == 200:
                     challenge_phrases = [
                         "just a moment", "cf-browser-verification", "checking your browser", 
                         "turnstile", "ray id", "security check", "verify you are human", 
-                        "enable javascript", "attention required", "cloudflare", "ddos protection"
+                        "cloudflare", "ddos protection"
                     ]
                     
                     if any(phrase in r.text.lower() for phrase in challenge_phrases) and len(r.text) < 150000:
@@ -235,17 +189,16 @@ class ConsensusEngine:
                     rows = []
                     
                     if site_name == "WinDrawWin":
-                        rows = soup.find_all("div", class_=re.compile(r"(wttr|wtrow|match-row|pr-match)", re.I))
+                        # Dynamically adjust the parser based on whether we are currently hitting WinDrawWin or PredictZ
+                        prefix = "pt" if "predictz" in active_url else "wt"
+                        rows = soup.find_all("div", class_=re.compile(f"({prefix}tr|{prefix}row|match-row|pr-match)", re.I))
                         if not rows:
-                            child_elems = soup.find_all("div", class_=re.compile(r"(wttmobh|wttmoba|team1|team2)", re.I))
+                            child_elems = soup.find_all("div", class_=re.compile(f"({prefix}tmobh|{prefix}tmoba|team1|team2)", re.I))
                             if child_elems:
                                 rows = list(set([c.parent for c in child_elems if c.parent]))
                         if not rows:
                             rows = soup.find_all("tr")
-                        if not rows:
-                            raw_rows = soup.find_all("div", class_=re.compile(r'(row|match|fixture)', re.I))
-                            rows = [r for r in raw_rows if len(r.find_all('a')) >= 2 and len(r.text) < 800]
-                    elif site_name in ["SoccerVista", "Zulubet"]:
+                    elif site_name == "Zulubet":
                         rows = soup.find_all("tr")
                         if not rows or len(rows) < 5:
                             raw_rows = soup.find_all("div", class_=re.compile(r'(predict|match|row|fixture|item)', re.I))
@@ -259,7 +212,6 @@ class ConsensusEngine:
                         if attempt < max_attempts:
                             time.sleep(2 * attempt)
                             continue
-                        
                         page_title = soup.title.text.strip() if soup.title else "No Title"
                         self.diagnostics[site_name] = f"🟡 BLOCKED/EMPTY (0 parsed | Title: {page_title[:25]})"
                         return
@@ -276,9 +228,10 @@ class ConsensusEngine:
                             home, away, pick = None, None, None
 
                             if site_name == "WinDrawWin":
-                                h_elem = row.find(class_=re.compile(r'(wttmobh|team1|h$|home)', re.I))
-                                a_elem = row.find(class_=re.compile(r'(wttmoba|team2|a$|away)', re.I))
-                                p_elem = row.find(class_=re.compile(r'(wtoddsdesc|mobpred|prd|pred|pick|tip|prediction)', re.I))
+                                prefix = "pt" if "predictz" in active_url else "wt"
+                                h_elem = row.find(class_=re.compile(f'({prefix}tmobh|team1|h$|home)', re.I))
+                                a_elem = row.find(class_=re.compile(f'({prefix}tmoba|team2|a$|away)', re.I))
+                                p_elem = row.find(class_=re.compile(f'({prefix}oddsdesc|mobpred|prd|pred|pick|tip|prediction)', re.I))
 
                                 if h_elem and a_elem:
                                     home, away = h_elem.text, a_elem.text
@@ -296,60 +249,7 @@ class ConsensusEngine:
                                                 if text_chunk.strip().upper() in valid_picks:
                                                     pick = text_chunk.strip()
                                                     break
-                                    else:
-                                        tds = row.find_all(["td", "div"])
-                                        for td in tds:
-                                            txt = td.get_text(" ", strip=True)
-                                            if " v " in txt or " vs " in txt:
-                                                parts = re.split(r'\s+v\s+|\s+vs\s+', txt, maxsplit=1, flags=re.I)
-                                                if len(parts) == 2:
-                                                    home, away = parts[0].strip(), parts[1].strip()
-                                                    break
-                                        
-                                        if home and away:
-                                            valid_picks = ["HOME", "DRAW", "AWAY", "1", "X", "2", "HOME WIN", "AWAY WIN", "H", "A", "D"]
-                                            for text_chunk in row.stripped_strings:
-                                                if text_chunk.strip().upper() in valid_picks:
-                                                    pick = text_chunk.strip()
-                                                    break
                                             
-                            elif site_name == "SoccerVista":
-                                tds = row.find_all("td")
-                                if len(tds) >= 3:
-                                    raw_home = tds[1].text.strip()
-                                    if len(tds) >= 4 and (re.search(r'\d+:\d+', tds[2].text) or tds[2].text.strip() in ["-", "vs", "v", ""]):
-                                        raw_away = tds[3].text.strip()
-                                    else:
-                                        raw_away = tds[2].text.strip()
-                                        
-                                    home = re.sub(r'^([WDL]\s+)+', '', raw_home).strip()
-                                    away = re.sub(r'(\s+[WDL])+$', '', raw_away).strip()
-                                    
-                                    for td in tds:
-                                        txt = td.text.strip().upper()
-                                        if "10 ON " in txt:
-                                            target = txt.replace("10 ON ", "").strip()
-                                            if target in ["DRAW", "X"]: pick = "X"
-                                            elif target and (target in home.upper() or home.upper().startswith(target)): pick = "1"
-                                            elif target and (target in away.upper() or away.upper().startswith(target)): pick = "2"
-                                            elif len(target) >= 3 and target[:3] in home.upper(): pick = "1"
-                                            elif len(target) >= 3 and target[:3] in away.upper(): pick = "2"
-                                            else: pick = "1"
-                                            break
-                                        elif txt in ["1", "X", "2", "1X", "X2", "12"]:
-                                            pick = txt
-                                            break
-                                            
-                                if not home or not away:
-                                    text_chunks = [t.strip() for t in row.stripped_strings if t.strip()]
-                                    for chunk in text_chunks:
-                                        if " v " in chunk.lower() or " vs " in chunk.lower():
-                                            parts = re.split(r'(?i)\s+v\s+|\s+vs\s+', chunk, maxsplit=1)
-                                            if len(parts) == 2:
-                                                home, away = parts[0].strip(), parts[1].strip()
-                                        elif chunk in ["1", "X", "2", "1X", "X2", "12"]:
-                                            pick = chunk
-
                             elif site_name == "Zulubet":
                                 text_chunks = [t.strip() for t in row.stripped_strings if t.strip()]
                                 for chunk in text_chunks:
@@ -360,6 +260,16 @@ class ConsensusEngine:
                                     elif chunk.upper() in ["1", "X", "2", "1X", "X2", "12"]:
                                         pick = chunk.upper()
                                         
+                                if not home or not away:
+                                    tds = row.find_all("td")
+                                    for td in tds:
+                                        txt = td.text.strip()
+                                        if " - " in txt and not re.search(r'\d+:\d+', txt):
+                                            parts = txt.split(" - ", 1)
+                                            if len(parts) == 2:
+                                                home, away = parts[0].strip(), parts[1].strip()
+                                                break
+
                             elif site_name == "Statarea":
                                 home_elems = row.find_all("div", class_="name")
                                 if len(home_elems) >= 2:
@@ -418,7 +328,7 @@ class ConsensusEngine:
         structured_tickets = []
         ai_input_data = []
 
-        all_scrapers = ["Statarea", "Vitibet", "Zulubet", "WinDrawWin", "SoccerVista"]
+        all_scrapers = ["Statarea", "Vitibet", "Zulubet", "WinDrawWin"]
         required_consensus = 3 
 
         for match, listings in self.master_matrix.items():
@@ -449,7 +359,7 @@ class ConsensusEngine:
                             break
                     
                     if other_pick: 
-                        match_text += f"  ↳ ⚠️ {left_out} backed: {other_pick}\n"
+                        match_text += f"  ↳ ⚠️️ {left_out} backed: {other_pick}\n"
                         contradictions.append(f"{left_out} ({other_pick})")
                     else: 
                         match_text += f"  ↳ ⚪ {left_out}: Not Listed\n"
@@ -668,9 +578,9 @@ class ConsensusEngine:
             self.diagnostics["DailyLock"] = f"🟢 CACHED (Tokens Saved for {today_date})"
         else:
             print(f"🔓 Scraping and generating fresh Algorithmic Tickets for {today_date}...")
-            self.check_scraperapi_balance()
+            
             loop = asyncio.get_running_loop()
-            with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=5) as pool:
                 base_tasks = [
                     loop.run_in_executor(pool, self.fetch_and_scrape_sync, n, c)
                     for n, c in self.configs.items()
@@ -725,7 +635,7 @@ class ConsensusEngine:
                 msg += "\n"
 
             msg += "⚙️ **SCRAPER STATUS** ⚙️\n"
-            essential_keys = ["Telegram", "ScraperAPICredits", "Statarea", "Vitibet", "Zulubet", "WinDrawWin", "SoccerVista", "CornersEngine", "QuantEngine", "DailyLock"]
+            essential_keys = ["Telegram", "Statarea", "Vitibet", "Zulubet", "WinDrawWin", "CornersEngine", "QuantEngine", "DailyLock"]
             for k in essential_keys:
                 if k in self.diagnostics:
                     msg += f"↳ {k}: {self.diagnostics[k]}\n"
