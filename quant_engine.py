@@ -15,8 +15,9 @@ from curl_cffi import requests as tls_requests
 # ==============================================================================
 TELEGRAM_TOKEN = os.environ.get("QUANT_TELEGRAM_TOKEN") or os.environ.get("TRACKER_TRACKER_TELEGRAM_TOKEN") or os.environ.get("TRACKER_TELEGRAM_TOKEN")
 TELEGRAM_CHAT_ID = os.environ.get("QUANT_TELEGRAM_CHAT_ID") or os.environ.get("TRACKER_TRACKER_TELEGRAM_CHAT_ID") or os.environ.get("TRACKER_TELEGRAM_CHAT_ID")
+SCRAPER_API_KEY = (os.environ.get("SCRAPER_API_KEY") or "").strip()
 
-# KEEPING THIS TRUE FOR THE TEST RUN
+# KEEPING THIS TRUE FOR THE VICTORY RUN
 FORCE_RUN = True 
 
 MEMORY_FILE = "pending_tickets.json"
@@ -31,7 +32,8 @@ def get_dynamic_configs():
         "Vitibet": {"url": f"https://www.vitibet.com/index.php?clanek=quicktips&sekce=fotbal&lang=en&cb={cb}"},
         "Zulubet": {"url": "https://www.zulubet.com/"},
         "WinDrawWin": {"url": "https://www.windrawwin.com/predictions/today/"},
-        "SoccerVista": {"url": "https://www.soccervista.com/"}
+        # FIX: SoccerVista completely replaced by BetClan (Raw HTML, no JS rendering required)
+        "BetClan": {"url": "https://www.betclan.com/predictions/today"}
     }
 
 class ConsensusEngine:
@@ -167,7 +169,7 @@ class ConsensusEngine:
                         rows = soup.find_all("div", class_=re.compile(r"(wttr|wtrow|match-row|pr-match)", re.I))
                         if not rows:
                             rows = soup.find_all("tr")
-                    elif site_name in ["SoccerVista", "Zulubet"]:
+                    elif site_name in ["Zulubet", "BetClan"]:
                         rows = soup.find_all("tr")
                         if not rows or len(rows) < 5:
                             raw_rows = soup.find_all("div", class_=re.compile(r'(predict|match|row|fixture|item)', re.I))
@@ -217,38 +219,12 @@ class ConsensusEngine:
                                                     pick = text_chunk.strip()
                                                     break
                                             
-                            elif site_name == "SoccerVista":
-                                tds = row.find_all("td")
-                                if len(tds) >= 3:
-                                    raw_home = tds[1].text.strip()
-                                    if len(tds) >= 4 and (re.search(r'\d+:\d+', tds[2].text) or tds[2].text.strip() in ["-", "vs", "v", ""]):
-                                        raw_away = tds[3].text.strip()
-                                    else:
-                                        raw_away = tds[2].text.strip()
-                                        
-                                    home = re.sub(r'^([WDL]\s+)+', '', raw_home).strip()
-                                    away = re.sub(r'(\s+[WDL])+$', '', raw_away).strip()
-                                    
-                                    for td in tds:
-                                        txt = td.text.strip().upper()
-                                        if "10 ON " in txt:
-                                            target = txt.replace("10 ON ", "").strip()
-                                            if target in ["DRAW", "X"]: pick = "X"
-                                            elif target and (target in home.upper() or home.upper().startswith(target)): pick = "1"
-                                            elif target and (target in away.upper() or away.upper().startswith(target)): pick = "2"
-                                            elif len(target) >= 3 and target[:3] in home.upper(): pick = "1"
-                                            elif len(target) >= 3 and target[:3] in away.upper(): pick = "2"
-                                            else: pick = "1"
-                                            break
-                                        elif txt in ["1", "X", "2", "1X", "X2", "12"]:
-                                            pick = txt
-                                            break
-                                            
-                            elif site_name == "Zulubet":
+                            elif site_name in ["Zulubet", "BetClan"]:
+                                # Universal pure-text parser, rips data easily from any raw HTML table
                                 text_chunks = [t.strip() for t in row.stripped_strings if t.strip()]
                                 for chunk in text_chunks:
-                                    if " - " in chunk and len(chunk) > 5 and not re.search(r'\d+:\d+', chunk):
-                                        parts = chunk.split(" - ", 1)
+                                    if (" - " in chunk or " vs " in chunk.lower()) and len(chunk) > 5 and not re.search(r'\d+:\d+', chunk):
+                                        parts = re.split(r'\s+-\s+|\s+(?i)vs\s+', chunk, maxsplit=1)
                                         if len(parts) == 2:
                                             home, away = parts[0].strip(), parts[1].strip()
                                     elif chunk.upper() in ["1", "X", "2", "1X", "X2", "12"]:
@@ -303,7 +279,7 @@ class ConsensusEngine:
         structured_tickets = []
         ai_input_data = []
 
-        all_scrapers = ["Statarea", "Vitibet", "WinDrawWin", "SoccerVista", "Zulubet"]
+        all_scrapers = ["Statarea", "Vitibet", "WinDrawWin", "Zulubet", "BetClan"]
         required_consensus = 3 
 
         for match, listings in self.master_matrix.items():
@@ -420,7 +396,7 @@ class ConsensusEngine:
         if reserve1: ticket_text += f"🔄 [RESERVE PICK]: {reserve1}\n"
             
         if ticket2_mains:
-            ticket_text += "\n🛡️ **Ticket 2: Premium Slip (50% of Daily Stake)**\n"
+            ticket_text += "\n🛡️️ **Ticket 2: Premium Slip (50% of Daily Stake)**\n"
             for pick in ticket2_mains: ticket_text += f"• {pick}\n"
             if reserve2: ticket_text += f"🔄 [RESERVE PICK]: {reserve2}\n"
                 
@@ -510,7 +486,7 @@ class ConsensusEngine:
 
     def send_telegram_alert(self, msg):
         if not (TELEGRAM_TOKEN and TELEGRAM_CHAT_ID):
-            print("Telegram credentials missing; Telegram notification skipped.")
+            print("Telegram credentials missing.")
             return
 
         url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
@@ -555,6 +531,10 @@ class ConsensusEngine:
             self.diagnostics["DailyLock"] = f"🟢 CACHED (Tokens Saved for {today_date})"
         else:
             print(f"🔓 Scraping and generating fresh Algorithmic Tickets for {today_date}...")
+            
+            # ScraperAPI tracker just to prove we are fully independent of it now
+            self.check_scraperapi_balance()
+            
             loop = asyncio.get_running_loop()
             with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:
                 base_tasks = [
@@ -610,8 +590,8 @@ class ConsensusEngine:
                 for rep in settled_reports: msg += f"{rep}\n"
                 msg += "\n"
 
-            msg += "⚙️ **SCRAPER STATUS** ⚙️️\n"
-            essential_keys = ["Telegram", "Statarea", "Vitibet", "Zulubet", "WinDrawWin", "SoccerVista", "CornersEngine", "QuantEngine", "DailyLock"]
+            msg += "⚙️ **SCRAPER STATUS** ⚙️\n"
+            essential_keys = ["Telegram", "ScraperAPICredits", "Statarea", "Vitibet", "Zulubet", "WinDrawWin", "BetClan", "CornersEngine", "QuantEngine", "DailyLock"]
             for k in essential_keys:
                 if k in self.diagnostics:
                     msg += f"↳ {k}: {self.diagnostics[k]}\n"
