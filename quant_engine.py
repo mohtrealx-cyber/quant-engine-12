@@ -170,7 +170,7 @@ class ConsensusEngine:
 
     def fetch_and_scrape_sync(self, site_name, cfg):
         max_attempts = 4
-        req_timeout = 100 
+        req_timeout = 90 
         last_status = "TIMEOUT"
         target_url = cfg["url"]
 
@@ -190,21 +190,20 @@ class ConsensusEngine:
                 r = None
 
                 # =======================================================
-                # EXACT TITAN 1 WATERFALL ROUTING (Proven to bypass 403s & 200s)
+                # EXACT TITAN 1 WATERFALL ROUTING (Proven to bypass 403s & 500s)
                 # =======================================================
                 if site_name == "WinDrawWin":
                     if attempt == 1 and SCRAPER_API_KEY:
-                        r = requests.get("http://api.scraperapi.com/", params={"api_key": SCRAPER_API_KEY, "url": active_url, "premium": "true", "country_code": "uk"}, timeout=req_timeout)
+                        r = requests.get("http://api.scraperapi.com/", params={"api_key": SCRAPER_API_KEY, "url": active_url, "premium": "true", "country_code": "uk", "render": "true"}, timeout=req_timeout)
                     elif attempt == 2 and SCRAPER_API_KEY:
-                        r = requests.get("http://api.scraperapi.com/", params={"api_key": SCRAPER_API_KEY, "url": active_url, "premium": "true", "country_code": "us"}, timeout=req_timeout)
-                    elif attempt == 3:
+                        r = requests.get("http://api.scraperapi.com/", params={"api_key": SCRAPER_API_KEY, "url": active_url, "premium": "true", "antibot": "true"}, timeout=req_timeout)
+                    elif attempt == 3 and SCRAPER_API_KEY:
+                        r = requests.get("http://api.scraperapi.com/", params={"api_key": SCRAPER_API_KEY, "url": active_url, "premium": "true", "render": "true"}, timeout=req_timeout)
+                    elif attempt == 4:
                         r = tls_requests.get(active_url, impersonate="chrome124", timeout=req_timeout)
-                    elif attempt == 4 and SCRAPER_API_KEY:
-                        r = requests.get("http://api.scraperapi.com/", params={"api_key": SCRAPER_API_KEY, "url": active_url, "premium": "true"}, timeout=req_timeout)
                 
                 elif site_name == "SoccerVista":
                     if attempt <= 3 and SCRAPER_API_KEY:
-                        # render=true fixes the HTTP 200 blank page issue by rendering JS
                         r = requests.get("http://api.scraperapi.com/", params={"api_key": SCRAPER_API_KEY, "url": active_url, "premium": "true", "render": "true"}, timeout=req_timeout)
                     else:
                         r = tls_requests.get(active_url, impersonate="chrome124", timeout=req_timeout)
@@ -361,16 +360,6 @@ class ConsensusEngine:
                                     elif chunk.upper() in ["1", "X", "2", "1X", "X2", "12"]:
                                         pick = chunk.upper()
                                         
-                                if not home or not away:
-                                    tds = row.find_all("td")
-                                    for td in tds:
-                                        txt = td.text.strip()
-                                        if " - " in txt and not re.search(r'\d+:\d+', txt):
-                                            parts = txt.split(" - ", 1)
-                                            if len(parts) == 2:
-                                                home, away = parts[0].strip(), parts[1].strip()
-                                                break
-                                                
                             elif site_name == "Statarea":
                                 home_elems = row.find_all("div", class_="name")
                                 if len(home_elems) >= 2:
@@ -679,9 +668,7 @@ class ConsensusEngine:
             self.diagnostics["DailyLock"] = f"🟢 CACHED (Tokens Saved for {today_date})"
         else:
             print(f"🔓 Scraping and generating fresh Algorithmic Tickets for {today_date}...")
-            
             self.check_scraperapi_balance()
-            
             loop = asyncio.get_running_loop()
             with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:
                 base_tasks = [
