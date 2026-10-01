@@ -578,7 +578,8 @@ class ConsensusEngine:
                                 text_chunks = [t.strip() for t in row.stripped_strings if t.strip()]
                                 for chunk in text_chunks:
                                     if (" - " in chunk or " vs " in chunk.lower()) and len(chunk) > 5 and not re.search(r'\d+:\d+', chunk):
-                                        parts = re.split(r'\s+-\s+|\s+(?i)vs\s+', chunk, maxsplit=1)
+                                        # FIX: Properly handle regex case-insensitivity at the start
+                                        parts = re.split(r'(?i)\s+-\s+|\s+vs\s+', chunk, maxsplit=1)
                                         if len(parts) == 2:
                                             home, away = parts[0].strip(), parts[1].strip()
                                     elif chunk.upper() in ["1", "X", "2", "1X", "X2", "12"]:
@@ -587,14 +588,16 @@ class ConsensusEngine:
                             elif site_name == "Statarea":
                                 home_elems = row.find_all("div", class_="name")
                                 if len(home_elems) >= 2:
-                                    home, away = home_elems[0].text, home_elems[1].text
+                                    home = home_elems[0].text
+                                    away = home_elems[1].text
                                 pick_elem = row.find("div", class_="type1")
                                 if pick_elem: pick = pick_elem.text
                                 
                             elif site_name == "Vitibet":
                                 home_elems = row.find_all("span", class_="livescore-team-name")
                                 if len(home_elems) >= 2:
-                                    home, away = home_elems[0].text, home_elems[1].text
+                                    home = home_elems[0].text
+                                    away = home_elems[1].text
                                 pick_elem = row.find("span", class_="tip-indicator-circle")
                                 if pick_elem: pick = pick_elem.text
 
@@ -620,9 +623,20 @@ class ConsensusEngine:
                         self.diagnostics[site_name] = f"🟢 OK ({valid_count} Upcoming | {skipped_count} Played)"
                         return
 
+                if r and r.status_code in [403, 500, 502, 503, 504, 429]:
+                    time.sleep(2 * attempt)
+                    continue
+                else:
+                    time.sleep(2 * attempt)
+                    continue
+
+            except requests.exceptions.ReadTimeout:
+                last_status = "TIMEOUT"
                 time.sleep(2 * attempt)
+                continue
             except Exception:
                 time.sleep(2 * attempt)
+                continue
 
         self.diagnostics[site_name] = f"🔴 FAILED (HTTP {last_status})"
 
@@ -633,7 +647,11 @@ class ConsensusEngine:
         core_data = []
         fallback_data = []
 
-        all_scrapers = ["Statarea", "Vitibet", "Zulubet", "WinDrawWin", "SoccerVista", "Golsinyali", "Expected90", "NVtips"]
+        all_scrapers = [
+            "Statarea", "Vitibet", "Zulubet", "WinDrawWin", "SoccerVista", 
+            "Golsinyali", "Expected90", "NVtips"
+        ]
+        
         required_consensus = 4 
         fallback_consensus = 3
 
@@ -685,7 +703,19 @@ class ConsensusEngine:
                     fallback_matches.append(match_text)
                     fallback_data.append(record)
 
-        return core_matches, fallback_matches, structured_tickets, core_data, fallback_data
+        # Active when we don't have enough 4+ matches to build 2 full tickets safely
+        fallback_active = len(core_data) < 6
+
+        return (
+            core_matches,
+            fallback_matches,
+            structured_tickets,
+            core_data,
+            fallback_data,
+            required_consensus,
+            fallback_consensus,
+            fallback_active,
+        )
 
     def build_algorithmic_ticket(self, core_data, fallback_data, active_corner_teams):
         self.diagnostics["QuantEngine"] = "🟢 2-Ticket Engine Generated"
@@ -846,7 +876,7 @@ class ConsensusEngine:
 
     def send_telegram_alert(self, msg):
         if not (TELEGRAM_TOKEN and TELEGRAM_CHAT_ID):
-            print("Telegram credentials missing.")
+            print("Telegram credentials missing; Telegram notification skipped.")
             return
 
         url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
@@ -860,6 +890,8 @@ class ConsensusEngine:
                 if r.status_code != 200:
                     payload.pop("parse_mode", None)
                     r2 = requests.post(url, json=payload, timeout=15)
+                    if r2.status_code != 200:
+                        print(f"Telegram alert error: {r2.text}")
             except Exception as e:
                 print(f"Telegram alert exception: {e}")
             time.sleep(1)
@@ -881,16 +913,18 @@ class ConsensusEngine:
         else: self.diagnostics["Telegram"] = "🟢 CONFIGURED"
 
         if is_already_locked:
-            print(f"🔒 Data for {today_date} is securely locked. Bypassing scrapers.")
+            print(f"🔒 Data for {today_date} is securely locked. Bypassing scrapers to conserve tokens.")
             daily_data = memory[today_date]
             agreed_matches = daily_data.get("core_matches_4plus") or daily_data.get("agreed_matches", [])
             algorithmic_message = daily_data.get("ai_optimized_message")
+            req_threshold = daily_data.get("req_threshold", 4)
+            fallback_active = daily_data.get("fallback_active", False)
             self.diagnostics["DailyLock"] = f"🟢 CACHED (Tokens Saved for {today_date})"
         else:
             print(f"🔓 Scraping and generating fresh Algorithmic Tickets for {today_date}...")
             
             self.check_scraperapi_balance()
-            
+
             loop = asyncio.get_running_loop()
             with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:
                 base_tasks = [
@@ -938,6 +972,7 @@ class ConsensusEngine:
                 "locked": should_lock,
                 "agreed_matches": agreed_matches,
                 "ai_optimized_message": algorithmic_message,
+                "req_threshold": req_threshold,
                 "tickets": structured_tickets
             }
             
@@ -949,7 +984,12 @@ class ConsensusEngine:
         settled_reports = self.settle_pending_tickets(memory)
 
         if not is_already_locked or settled_reports:
-            msg = "🤝 **RAW CONSENSUS DATA** 🤝\n\n"
+            msg = ""
+            if fallback_active:
+                msg += "🤝 **RAW CONSENSUS DATA (3+ SITES AGREEMENT)** 🤝\n\n"
+            else:
+                msg += "🤝 **RAW CONSENSUS DATA (4+ SITES AGREEMENT)** 🤝\n\n"
+
             if agreed_matches:
                 for match in agreed_matches:
                     msg += f"{match}\n"
@@ -961,7 +1001,7 @@ class ConsensusEngine:
                 for rep in settled_reports: msg += f"{rep}\n"
                 msg += "\n"
 
-            msg += "⚙️️ **SCRAPER STATUS** ⚙️\n"
+            msg += "⚙️ **SCRAPER STATUS** ⚙️️\n"
             essential_keys = [
                 "Telegram", "ScraperAPICredits", "Statarea", "Vitibet", 
                 "Zulubet", "WinDrawWin", "SoccerVista", "Golsinyali", 
