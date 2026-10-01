@@ -17,8 +17,8 @@ TELEGRAM_TOKEN = os.environ.get("QUANT_TELEGRAM_TOKEN") or os.environ.get("TRACK
 TELEGRAM_CHAT_ID = os.environ.get("QUANT_TELEGRAM_CHAT_ID") or os.environ.get("TRACKER_TRACKER_TELEGRAM_CHAT_ID") or os.environ.get("TRACKER_TELEGRAM_CHAT_ID")
 SCRAPER_API_KEY = (os.environ.get("SCRAPER_API_KEY") or "").strip()
 
-# Set to True for testing; change to False in production to respect the 05:00 lock
-FORCE_RUN = True 
+# LOCKED DOWN FOR PRODUCTION (Prevents re-scraping after the first successful run of the day)
+FORCE_RUN = False 
 
 MEMORY_FILE = "pending_tickets.json"
 
@@ -42,7 +42,7 @@ def get_dynamic_configs():
             "fallback_url": None,
             "row_selector": "a", "row_class": "livescore-match-row",
             "home_selector": "span", "home_class": "livescore-team-name", "home_index": 0,
-            "away_selector": "span", "home_class": "livescore-team-name", "home_index": 1,
+            "away_selector": "span", "away_class": "livescore-team-name", "away_index": 1,
             "pick_selector": "span", "pick_class": "tip-indicator-circle", "pick_index": 0,
             "use_scraperapi": False
         },
@@ -69,9 +69,19 @@ def get_dynamic_configs():
             "fallback_url": "https://www.soccervista.com/predictions/",
             "row_selector": "tr", "row_class": "",
             "home_selector": "td", "home_class": "", "home_index": 0,
-            "away_selector": "td", "home_class": "", "home_index": 1,
+            "away_selector": "td", "away_class": "", "away_index": 1,
             "pick_selector": "td", "pick_class": "", "pick_index": 4,
             "use_scraperapi": True
+        },
+        "Golsinyali": {
+            "url": "https://www.golsinyali.com/en/predictions",
+            "fallback_url": None,
+            "use_scraperapi": False
+        },
+        "SoccerAiTips": {
+            "url": "https://www.socceraitips.com/api/daily-parlay",
+            "fallback_url": None,
+            "use_scraperapi": False
         }
     }
 
@@ -126,7 +136,7 @@ class ConsensusEngine:
             for flag in status_flags:
                 if flag in padded_text:
                     return True
-        except Exception:
+        except:
             pass
         return False
 
@@ -161,6 +171,10 @@ class ConsensusEngine:
             "matched_existing_fixture": matched_existing_fixture,
             "normalized_pick": normalized_pick,
         }
+
+    # ==========================================================================
+    # SECONDARY SCRAPERS
+    # ==========================================================================
 
     def fetch_golsinyali_sync(self):
         try:
@@ -198,7 +212,7 @@ class ConsensusEngine:
                                     if data.get("@type") == "SportsEvent": sports_event = data
                                     elif "@graph" in data:
                                         sports_event = next((g for g in data["@graph"] if g.get("@type") == "SportsEvent"), None)
-                            except Exception: pass
+                            except: pass
                         if sports_event: break
 
                     if sports_event:
@@ -223,7 +237,7 @@ class ConsensusEngine:
                                 valid_count += 1
                                 if res["matched_existing_fixture"]: matched_count += 1
                                 else: new_count += 1
-                except Exception:
+                except:
                     continue
 
             if valid_count > 0:
@@ -232,113 +246,6 @@ class ConsensusEngine:
                 self.diagnostics["Golsinyali"] = "🟡 NO PREDICTIONS"
         except Exception as e:
             self.diagnostics["Golsinyali"] = f"🔴 FAILED ({type(e).__name__})"
-
-    def fetch_expected90_sync(self):
-        try:
-            url = "https://www.90predict.com/football-predictions-today"
-            r = tls_requests.get(url, impersonate="chrome124", timeout=25)
-            if r.status_code != 200:
-                self.diagnostics["Expected90"] = f"🔴 FAILED (HTTP {r.status_code})"
-                return
-
-            soup = BeautifulSoup(r.content, "html.parser")
-            links = []
-            for a in soup.find_all("a", href=True):
-                if "-vs-" in a['href']:
-                    href = a['href']
-                    full_url = href if href.startswith("http") else f"https://www.90predict.com{href if href.startswith('/') else '/' + href}"
-                    if full_url not in links: links.append(full_url)
-
-            links = links[:15]
-            valid_count, matched_count, new_count = 0, 0, 0
-
-            for link in links:
-                try:
-                    mr = tls_requests.get(link, impersonate="chrome124", timeout=15)
-                    msoup = BeautifulSoup(mr.content, "html.parser")
-                    scripts = msoup.find_all("script", type="application/ld+json")
-                    sports_event = None
-                    for s in scripts:
-                        if s.string and "SportsEvent" in s.string:
-                            try:
-                                data = json.loads(s.string)
-                                if isinstance(data, list): sports_event = next((d for d in data if d.get("@type") == "SportsEvent"), None)
-                                elif isinstance(data, dict):
-                                    if data.get("@type") == "SportsEvent": sports_event = data
-                                    elif "@graph" in data: sports_event = next((g for g in data["@graph"] if g.get("@type") == "SportsEvent"), None)
-                            except Exception: pass
-                        if sports_event: break
-
-                    if sports_event:
-                        h_team = sports_event.get("homeTeam", {}).get("name")
-                        a_team = sports_event.get("awayTeam", {}).get("name")
-                        desc = str(sports_event.get("description", ""))
-                        
-                        pattern = re.compile(r"(?P<home>[A-Za-z][^,%]*?)\s+(?P<home_pct>\d+(?:\.\d+)?)%\s*,\s*draw\s+(?P<draw_pct>\d+(?:\.\d+)?)%\s*,\s*(?P<away>[A-Za-z][^,%]*?)\s+(?P<away_pct>\d+(?:\.\d+)?)%", re.IGNORECASE)
-                        match = pattern.search(desc)
-                        if match and h_team and a_team:
-                            vals = {"1": float(match.group("home_pct")), "X": float(match.group("draw_pct")), "2": float(match.group("away_pct"))}
-                            pick = max(vals, key=vals.get)
-                            res = self.log_prediction_qa("Expected90", h_team, a_team, pick)
-                            if res:
-                                valid_count += 1
-                                if res["matched_existing_fixture"]: matched_count += 1
-                                else: new_count += 1
-                except Exception:
-                    continue
-            
-            if valid_count > 0:
-                self.diagnostics["Expected90"] = f"🟢 OK ({valid_count} Today | {matched_count} Matched | {new_count} New)"
-            else:
-                self.diagnostics["Expected90"] = "🟡 NO PREDICTIONS"
-        except Exception as e:
-            self.diagnostics["Expected90"] = f"🔴 FAILED ({type(e).__name__})"
-
-    def fetch_nvtips_sync(self):
-        try:
-            today = datetime.datetime.utcnow()
-            url = f"https://nvtips.com/?d={today.day}&m={today.month}&y={today.year}"
-            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0.0.0 Safari/537.36"}
-            r = requests.get(url, headers=headers, timeout=25)
-            if r.status_code != 200:
-                self.diagnostics["NVtips"] = f"🔴 FAILED (HTTP {r.status_code})"
-                return
-
-            soup = BeautifulSoup(r.content, "html.parser")
-            rows = soup.select("div.nv-row")
-            valid_count, matched_count, new_count = 0, 0, 0
-
-            for row in rows:
-                try:
-                    team_nodes = row.select(".nv-team-name")
-                    teams = [re.sub(r"\s+", " ", node.get_text(" ", strip=True)).strip() for node in team_nodes]
-                    if len(teams) < 2: continue
-                    home, away = teams[0], teams[1]
-
-                    data_search = row.get("data-search", "").lower()
-                    score_pred = re.search(r"\b([1x2])\s+(\d+)\s*-\s*(\d+)\b", data_search, re.IGNORECASE)
-                    pick = score_pred.group(1).upper() if score_pred else None
-
-                    if not pick:
-                        row_text = row.get_text(" ", strip=True)
-                        vis_match = re.search(r"\b([1x2])\b\s+\d+\s*-\s*\d+\b", row_text, re.IGNORECASE)
-                        if vis_match: pick = vis_match.group(1).upper()
-
-                    if home and away and pick:
-                        res = self.log_prediction_qa("NVtips", home, away, pick)
-                        if res:
-                            valid_count += 1
-                            if res["matched_existing_fixture"]: matched_count += 1
-                            else: new_count += 1
-                except Exception:
-                    continue
-            
-            if valid_count > 0:
-                self.diagnostics["NVtips"] = f"🟢 OK ({valid_count} Today | {matched_count} Matched | {new_count} New)"
-            else:
-                self.diagnostics["NVtips"] = "🟡 NO PREDICTIONS"
-        except Exception as e:
-            self.diagnostics["NVtips"] = f"🔴 FAILED ({type(e).__name__})"
 
     def fetch_socceraitips_sync(self):
         try:
@@ -379,7 +286,7 @@ class ConsensusEngine:
                         })
                         valid_count += 1
                         if matched: matched_count += 1
-                except Exception:
+                except:
                     continue
 
             if valid_count > 0:
@@ -388,6 +295,10 @@ class ConsensusEngine:
                 self.diagnostics["SoccerAiTips"] = "🟡 NO SECONDARY MARKETS"
         except Exception as e:
             self.diagnostics["SoccerAiTips"] = f"🔴 FAILED ({type(e).__name__})"
+
+    # ==========================================================================
+    # CORE ENGINE SCRAPERS
+    # ==========================================================================
 
     def fetch_corners_sync(self):
         url = "https://www.totalcorner.com/match/today"
@@ -439,7 +350,6 @@ class ConsensusEngine:
                 active_url = cfg.get("fallback_url") if (attempt >= 3 and cfg.get("fallback_url")) else target_url
                 r = None
 
-                # RESTORED SCRAPERAPI FOR PROXY TARGETS
                 if site_name == "WinDrawWin":
                     if attempt == 1 and SCRAPER_API_KEY:
                         r = requests.get("http://api.scraperapi.com/", params={"api_key": SCRAPER_API_KEY, "url": active_url, "premium": "true", "country_code": "uk"}, timeout=req_timeout)
@@ -524,8 +434,9 @@ class ConsensusEngine:
                                         p_div = row.find(class_=re.compile(r'(prd|pred|odds)', re.I))
                                         if p_div and self.normalize_prediction(p_div.text): pick = p_div.text
                                         else:
+                                            valid_picks = ["HOME", "DRAW", "AWAY", "1", "X", "2", "HOME WIN", "AWAY WIN", "H", "A", "D"]
                                             for text_chunk in row.stripped_strings:
-                                                if text_chunk.strip().upper() in ["1", "X", "2", "HOME", "DRAW", "AWAY"]:
+                                                if text_chunk.strip().upper() in valid_picks:
                                                     pick = text_chunk.strip()
                                                     break
                                             
@@ -637,8 +548,7 @@ class ConsensusEngine:
         fallback_data = []
 
         all_scrapers = [
-            "Statarea", "Vitibet", "Zulubet", "WinDrawWin", "SoccerVista", 
-            "Golsinyali", "Expected90", "NVtips"
+            "Statarea", "Vitibet", "Zulubet", "WinDrawWin", "SoccerVista", "Golsinyali"
         ]
         
         required_consensus = 4 
@@ -925,12 +835,14 @@ class ConsensusEngine:
                 base_tasks = [
                     loop.run_in_executor(pool, self.fetch_and_scrape_sync, n, c)
                     for n, c in self.configs.items()
+                    if n not in {"Golsinyali", "SoccerAiTips"}
                 ]
                 base_tasks.append(loop.run_in_executor(pool, self.fetch_corners_sync))
-                base_tasks.append(loop.run_in_executor(pool, self.fetch_golsinyali_sync))
-                base_tasks.append(loop.run_in_executor(pool, self.fetch_expected90_sync))
-                base_tasks.append(loop.run_in_executor(pool, self.fetch_socceraitips_sync))
-                base_tasks.append(loop.run_in_executor(pool, self.fetch_nvtips_sync))
+                
+                if "Golsinyali" in self.configs:
+                    base_tasks.append(loop.run_in_executor(pool, self.fetch_golsinyali_sync))
+                if "SoccerAiTips" in self.configs:
+                    base_tasks.append(loop.run_in_executor(pool, self.fetch_socceraitips_sync))
                 
                 await asyncio.gather(*base_tasks)
 
@@ -999,8 +911,7 @@ class ConsensusEngine:
             essential_keys = [
                 "Telegram", "ScraperAPICredits", "Statarea", "Vitibet", 
                 "Zulubet", "WinDrawWin", "SoccerVista", "Golsinyali", 
-                "Expected90", "SoccerAiTips", "NVtips", "CornersEngine", 
-                "QuantEngine", "DailyLock"
+                "SoccerAiTips", "CornersEngine", "QuantEngine", "DailyLock"
             ]
             for k in essential_keys:
                 if k in self.diagnostics:
