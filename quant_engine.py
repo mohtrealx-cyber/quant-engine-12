@@ -30,8 +30,7 @@ def get_dynamic_configs():
         "Statarea": {"url": f"https://www.statarea.com/predictions/date/{today_date}/"},
         "Vitibet": {"url": f"https://www.vitibet.com/index.php?clanek=quicktips&sekce=fotbal&lang=en&cb={cb}"},
         "Zulubet": {"url": "https://www.zulubet.com/"},
-        "WinDrawWin": {"url": "https://www.windrawwin.com/predictions/today/"},
-        "BetClan": {"url": "https://www.betclan.com/predictions/today"}
+        "BetClan": {"url": "https://www.betclan.com/todays-football-predictions/"}
     }
 
 class ConsensusEngine:
@@ -52,7 +51,10 @@ class ConsensusEngine:
             if char in ["1", "h"]: return "1"
             if char in ["x", "0", "d"]: return "X"
             if char in ["2", "a"]: return "2"
-        return None
+            
+        # BetClan uses full team names for predictions, so if the text is longer than 2 characters, 
+        # it will be handled by the QA logger which checks if it matches home or away team.
+        return raw_text 
 
     def clean_team_name(self, name):
         cleaned = re.sub(r'(?i)\b(match preview|preview|results?)\b', '', str(name))
@@ -72,8 +74,21 @@ class ConsensusEngine:
         if not home or not away or not raw_prediction:
             return None
 
+        # Custom normalization for BetClan which outputs the winning team's name
         normalized_pick = self.normalize_prediction(raw_prediction)
-        if not normalized_pick:
+        
+        # If the raw prediction is a string longer than 2 chars, check if it matches home/away
+        if normalized_pick and len(normalized_pick) > 2:
+            if normalized_pick.lower() in home.lower() or home.lower() in normalized_pick.lower():
+                normalized_pick = "1"
+            elif normalized_pick.lower() in away.lower() or away.lower() in normalized_pick.lower():
+                normalized_pick = "2"
+            elif "draw" in normalized_pick.lower():
+                normalized_pick = "X"
+            else:
+                return None # Could not resolve text prediction
+
+        if not normalized_pick or normalized_pick not in ["1", "X", "2"]:
             return None
 
         raw_match_key = f"{self.clean_team_name(home)} vs {self.clean_team_name(away)}"
@@ -163,15 +178,11 @@ class ConsensusEngine:
                     soup = BeautifulSoup(r.content, 'html.parser')
                     rows = []
                     
-                    if site_name == "WinDrawWin":
-                        rows = soup.find_all("div", class_=re.compile(r"(wttr|wtrow|match-row|pr-match)", re.I))
-                        if not rows:
-                            rows = soup.find_all("tr")
-                    elif site_name in ["Zulubet", "BetClan"]:
+                    if site_name in ["Zulubet", "BetClan"]:
                         rows = soup.find_all("tr")
                         if not rows or len(rows) < 5:
                             raw_rows = soup.find_all("div", class_=re.compile(r'(predict|match|row|fixture|item)', re.I))
-                            rows = [r for r in raw_rows if len(r.find_all('a')) >= 2 or len(r.find_all('div')) >= 2]
+                            rows = [row for row in raw_rows if len(row.find_all('a')) >= 2 or len(row.find_all('div')) >= 2]
                     elif site_name == "Statarea":
                         rows = soup.find_all("div", class_="matchrow")
                     elif site_name == "Vitibet":
@@ -181,8 +192,7 @@ class ConsensusEngine:
                         if attempt < max_attempts:
                             time.sleep(2 * attempt)
                             continue
-                        page_title = soup.title.text.strip() if soup.title else "No Title"
-                        self.diagnostics[site_name] = f"🟡 BLOCKED/EMPTY (0 parsed | Title: {page_title[:25]})"
+                        self.diagnostics[site_name] = f"🟡 BLOCKED/EMPTY (0 parsed)"
                         return
 
                     valid_count = 0
@@ -196,28 +206,13 @@ class ConsensusEngine:
 
                             home, away, pick = None, None, None
 
-                            if site_name == "WinDrawWin":
-                                h_elem = row.find(class_=re.compile(r'(wttmobh|team1|h$|home)', re.I))
-                                a_elem = row.find(class_=re.compile(r'(wttmoba|team2|a$|away)', re.I))
-                                p_elem = row.find(class_=re.compile(r'(wtoddsdesc|mobpred|prd|pred|pick|tip|prediction)', re.I))
-
-                                if h_elem and a_elem:
-                                    home, away = h_elem.text, a_elem.text
-                                    if p_elem: pick = p_elem.text
-                                    
-                                if not home or not away:
-                                    links = row.find_all("a")
-                                    if len(links) >= 2:
-                                        home, away = links[0].text.strip(), links[1].text.strip()
-                                        p_div = row.find(class_=re.compile(r'(prd|pred|odds)', re.I))
-                                        if p_div and self.normalize_prediction(p_div.text): pick = p_div.text
-                                        else:
-                                            for text_chunk in row.stripped_strings:
-                                                if text_chunk.strip().upper() in ["1", "X", "2", "HOME", "DRAW", "AWAY"]:
-                                                    pick = text_chunk.strip()
-                                                    break
-                                            
-                            elif site_name in ["Zulubet", "BetClan"]:
+                            if site_name == "BetClan":
+                                tds = row.find_all("td")
+                                if len(tds) >= 4:
+                                    home = tds[1].text.strip()
+                                    away = tds[2].text.strip()
+                                    pick = tds[3].text.strip()
+                            elif site_name == "Zulubet":
                                 text_chunks = [t.strip() for t in row.stripped_strings if t.strip()]
                                 for chunk in text_chunks:
                                     if (" - " in chunk or " vs " in chunk.lower()) and len(chunk) > 5 and not re.search(r'\d+:\d+', chunk):
@@ -226,7 +221,6 @@ class ConsensusEngine:
                                             home, away = parts[0].strip(), parts[1].strip()
                                     elif chunk.upper() in ["1", "X", "2", "1X", "X2", "12"]:
                                         pick = chunk.upper()
-                                        
                             elif site_name == "Statarea":
                                 home_elems = row.find_all("div", class_="name")
                                 if len(home_elems) >= 2:
@@ -234,7 +228,6 @@ class ConsensusEngine:
                                     away = home_elems[1].text
                                 pick_elem = row.find("div", class_="type1")
                                 if pick_elem: pick = pick_elem.text
-                                
                             elif site_name == "Vitibet":
                                 home_elems = row.find_all("span", class_="livescore-team-name")
                                 if len(home_elems) >= 2:
@@ -276,7 +269,7 @@ class ConsensusEngine:
         structured_tickets = []
         ai_input_data = []
 
-        all_scrapers = ["Statarea", "Vitibet", "WinDrawWin", "Zulubet", "BetClan"]
+        all_scrapers = ["Statarea", "Vitibet", "Zulubet", "BetClan"]
         required_consensus = 3 
 
         for match, listings in self.master_matrix.items():
@@ -584,7 +577,7 @@ class ConsensusEngine:
                 msg += "\n"
 
             msg += "⚙️ **SCRAPER STATUS** ⚙️\n"
-            essential_keys = ["Telegram", "Statarea", "Vitibet", "Zulubet", "WinDrawWin", "BetClan", "CornersEngine", "QuantEngine", "DailyLock"]
+            essential_keys = ["Telegram", "Statarea", "Vitibet", "Zulubet", "BetClan", "CornersEngine", "QuantEngine", "DailyLock"]
             for k in essential_keys:
                 if k in self.diagnostics:
                     msg += f"↳ {k}: {self.diagnostics[k]}\n"
