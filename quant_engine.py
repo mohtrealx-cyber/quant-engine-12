@@ -17,7 +17,7 @@ TELEGRAM_TOKEN = os.environ.get("QUANT_TELEGRAM_TOKEN") or os.environ.get("TRACK
 TELEGRAM_CHAT_ID = os.environ.get("QUANT_TELEGRAM_CHAT_ID") or os.environ.get("TRACKER_TRACKER_TELEGRAM_CHAT_ID") or os.environ.get("TRACKER_TELEGRAM_CHAT_ID")
 SCRAPER_API_KEY = (os.environ.get("SCRAPER_API_KEY") or "").strip()
 
-# KEEPING THIS TRUE FOR ONE LAST RUN TO BREAK THE CACHE
+# KEEPING THIS TRUE FOR THE 2-TICKET TEST
 FORCE_RUN = True 
 
 MEMORY_FILE = "pending_tickets.json"
@@ -62,11 +62,11 @@ def get_dynamic_configs():
             "fallback_url": None,
             "row_selector": "a", "row_class": "livescore-match-row",
             "home_selector": "span", "home_class": "livescore-team-name", "home_index": 0,
-            "away_selector": "span", "away_class": "livescore-team-name", "away_index": 1,
+            "away_selector": "span", "home_class": "livescore-team-name", "home_index": 1,
             "pick_selector": "span", "pick_class": "tip-indicator-circle", "pick_index": 0,
             "use_scraperapi": False
         },
-        "Zulubet": {  # FIX: PredictZ has been entirely replaced by Zulubet
+        "Zulubet": {  
             "url": "https://www.zulubet.com/",
             "fallback_url": "http://www.zulubet.com/",
             "row_selector": "tr", "row_class": "",
@@ -89,7 +89,7 @@ def get_dynamic_configs():
             "fallback_url": "https://www.soccervista.com/predictions/",
             "row_selector": "tr", "row_class": "",
             "home_selector": "td", "home_class": "", "home_index": 0,
-            "away_selector": "td", "away_class": "", "away_index": 1,
+            "away_selector": "td", "home_class": "", "home_index": 1,
             "pick_selector": "td", "pick_class": "", "pick_index": 4,
             "use_scraperapi": True
         }
@@ -115,9 +115,6 @@ class ConsensusEngine:
                 used = data.get("requestCount", 0)
                 remaining = limit - used
                 self.diagnostics["ScraperAPICredits"] = f"🟢 OK ({remaining:,} remaining)"
-                
-                if remaining < 1000:
-                    self.send_telegram_alert(f"⚠️ **SCRAPERAPI ALERT: LOW BALANCE** ⚠️\nYou only have {remaining:,} API credits left out of {limit:,}. Top up soon to prevent engine failure.")
             else:
                 self.diagnostics["ScraperAPICredits"] = "🔴 FAILED (Check API Dashboard)"
         except Exception:
@@ -244,26 +241,14 @@ class ConsensusEngine:
     GOLSINYALI_REQUEST_DELAY_SECONDS = 2.0
     GOLSINYALI_MAX_RETRIES = 2
     GOLSINYALI_MAX_RETRY_WAIT_SECONDS = 15.0
-    GOLSINYALI_USER_AGENT = (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/139.0.0.0 Safari/537.36"
-    )
+    GOLSINYALI_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36"
 
     @staticmethod
     def _golsinyali_parse_iso_datetime(value):
-        if not value:
-            return None
-        try:
-            parsed = datetime.datetime.fromisoformat(
-                str(value).strip().replace("Z", "+00:00")
-            )
-        except ValueError:
-            return None
-
-        if parsed.tzinfo is None:
-            parsed = parsed.replace(tzinfo=datetime.timezone.utc)
-
+        if not value: return None
+        try: parsed = datetime.datetime.fromisoformat(str(value).strip().replace("Z", "+00:00"))
+        except ValueError: return None
+        if parsed.tzinfo is None: parsed = parsed.replace(tzinfo=datetime.timezone.utc)
         return parsed.astimezone(datetime.timezone.utc)
 
     @staticmethod
@@ -271,61 +256,38 @@ class ConsensusEngine:
         soup = BeautifulSoup(html, "html.parser")
         for script in soup.find_all("script", type="application/ld+json"):
             raw = script.string
-            if not raw:
-                continue
-
-            try:
-                data = json.loads(raw)
-            except (TypeError, ValueError):
-                continue
-
+            if not raw: continue
+            try: data = json.loads(raw)
+            except (TypeError, ValueError): continue
             candidates = data if isinstance(data, list) else [data]
             for item in candidates:
-                if not isinstance(item, dict):
-                    continue
-
-                if item.get("@type") == "SportsEvent":
-                    return item
-
+                if not isinstance(item, dict): continue
+                if item.get("@type") == "SportsEvent": return item
                 graph = item.get("@graph")
                 if isinstance(graph, list):
                     for graph_item in graph:
-                        if (
-                            isinstance(graph_item, dict)
-                            and graph_item.get("@type") == "SportsEvent"
-                        ):
-                            return graph_item
+                        if isinstance(graph_item, dict) and graph_item.get("@type") == "SportsEvent": return graph_item
         return None
 
     @staticmethod
     def _golsinyali_extract_team_name(value):
         if isinstance(value, dict):
             name = value.get("name")
-            if isinstance(name, str) and name.strip():
-                return name.strip()
-
-        if isinstance(value, str) and value.strip():
-            return value.strip()
+            if isinstance(name, str) and name.strip(): return name.strip()
+        if isinstance(value, str) and value.strip(): return value.strip()
         return None
 
     @classmethod
     def _golsinyali_extract_fixture_metadata(cls, sports_event):
         home = cls._golsinyali_extract_team_name(sports_event.get("homeTeam"))
         away = cls._golsinyali_extract_team_name(sports_event.get("awayTeam"))
-        kickoff = cls._golsinyali_parse_iso_datetime(
-            sports_event.get("startDate")
-        )
-
+        kickoff = cls._golsinyali_parse_iso_datetime(sports_event.get("startDate"))
         organizer = sports_event.get("organizer")
         competition = None
-        if isinstance(organizer, dict):
-            competition = organizer.get("name")
-        elif isinstance(organizer, str):
-            competition = organizer
+        if isinstance(organizer, dict): competition = organizer.get("name")
+        elif isinstance(organizer, str): competition = organizer
 
-        if not home or not away or not kickoff:
-            return None
-
+        if not home or not away or not kickoff: return None
         return {
             "home_team": home,
             "away_team": away,
@@ -337,15 +299,11 @@ class ConsensusEngine:
 
     @staticmethod
     def _golsinyali_extract_prediction_from_description(description):
-        if not description:
-            return None
-
+        if not description: return None
         lowered = str(description).lower()
-
         if "home win" in lowered: return "HOME"
         if "away win" in lowered: return "AWAY"
         if "draw" in lowered: return "DRAW"
-
         if re.search(r"\bms1\b|\bpick\s*:\s*1\b", lowered): return "HOME"
         if re.search(r"\bms2\b|\bpick\s*:\s*2\b", lowered): return "AWAY"
         if re.search(r"\bmsx\b|\bpick\s*:\s*x\b", lowered): return "DRAW"
@@ -353,13 +311,7 @@ class ConsensusEngine:
         marker = lowered.find("balanced match")
         if marker >= 0:
             balanced_text = str(description)[marker:]
-            probabilities = re.search(
-                r"\((\d+(?:\.\d+)?)%\s*-\s*"
-                r"(\d+(?:\.\d+)?)%\s*-\s*"
-                r"(\d+(?:\.\d+)?)%\)",
-                balanced_text,
-            )
-
+            probabilities = re.search(r"\((\d+(?:\.\d+)?)%\s*-\s*(\d+(?:\.\d+)?)%\s*-\s*(\d+(?:\.\d+)?)%\)", balanced_text)
             if probabilities:
                 values = {
                     "HOME": float(probabilities.group(1)),
@@ -371,21 +323,15 @@ class ConsensusEngine:
 
     @classmethod
     def _golsinyali_extract_prediction(cls, sports_event, html):
-        prediction = cls._golsinyali_extract_prediction_from_description(
-            sports_event.get("description")
-        )
-        if prediction is not None:
-            return prediction
-
+        prediction = cls._golsinyali_extract_prediction_from_description(sports_event.get("description"))
+        if prediction is not None: return prediction
         lowered = html.lower()
         patterns = [
             (r"home\s+(?:win\s+)?(\d+(?:\.\d+)?)%\s*(?:probability|chance)", "HOME"),
             (r"away\s+(?:win\s+)?(\d+(?:\.\d+)?)%\s*(?:probability|chance)", "AWAY"),
         ]
-
         for pattern, selection in patterns:
-            if re.search(pattern, lowered):
-                return selection
+            if re.search(pattern, lowered): return selection
         return None
 
     def _fetch_golsinyali_html(self, url, referer=None):
@@ -402,44 +348,30 @@ class ConsensusEngine:
             "Sec-Fetch-User": "?1",
             "Connection": "keep-alive",
         }
-        if referer:
-            headers["Referer"] = referer
+        if referer: headers["Referer"] = referer
 
         last_error = None
         last_status = None
-        last_body_hint = None
 
         for attempt in range(1, self.GOLSINYALI_MAX_RETRIES + 1):
             try:
-                response = self.golsinyali_session.get(
-                    url,
-                    headers=headers,
-                    timeout=self.GOLSINYALI_REQUEST_TIMEOUT,
-                )
+                response = self.golsinyali_session.get(url, headers=headers, timeout=self.GOLSINYALI_REQUEST_TIMEOUT)
                 last_status = response.status_code
-                last_body_hint = response.text[:160].replace("\n", " ")
 
                 if response.status_code == 429:
                     retry_after = response.headers.get("Retry-After")
-                    try:
-                        wait_seconds = float(retry_after) if retry_after else self.GOLSINYALI_REQUEST_DELAY_SECONDS * attempt * 2
-                    except (TypeError, ValueError):
-                        wait_seconds = self.GOLSINYALI_REQUEST_DELAY_SECONDS * attempt
+                    try: wait_seconds = float(retry_after) if retry_after else self.GOLSINYALI_REQUEST_DELAY_SECONDS * attempt * 2
+                    except (TypeError, ValueError): wait_seconds = self.GOLSINYALI_REQUEST_DELAY_SECONDS * attempt
 
                     wait_seconds = min(max(0.0, wait_seconds), self.GOLSINYALI_MAX_RETRY_WAIT_SECONDS)
                     last_error = f"HTTP 429 (rate limited)"
-                    self.diagnostics["Golsinyali_RateLimit"] = f"🟡 HTTP 429; retry {attempt}/{self.GOLSINYALI_MAX_RETRIES}; waiting {wait_seconds:.1f}s"
 
                     if SCRAPER_API_KEY:
                         proxy_url = f"http://api.scraperapi.com?api_key={SCRAPER_API_KEY}&url={url}&render=true"
                         proxy_response = requests.get(proxy_url, headers=headers, timeout=60)
-                        if proxy_response.status_code == 200 and proxy_response.text.strip():
-                            self.diagnostics["Golsinyali_RateLimit"] = "🟢 ScraperAPI fallback succeeded"
-                            return proxy_response.text
-                        last_error = f"HTTP 429; ScraperAPI fallback returned HTTP {proxy_response.status_code}"
+                        if proxy_response.status_code == 200 and proxy_response.text.strip(): return proxy_response.text
 
-                    if attempt < self.GOLSINYALI_MAX_RETRIES and wait_seconds > 0:
-                        time.sleep(wait_seconds)
+                    if attempt < self.GOLSINYALI_MAX_RETRIES and wait_seconds > 0: time.sleep(wait_seconds)
                     continue
 
                 if response.status_code in (403, 408, 425, 500, 502, 503, 504):
@@ -454,42 +386,32 @@ class ConsensusEngine:
                 if not html.strip():
                     last_error = "Empty response"
                     continue
-
                 return html
 
             except Exception as exc:
                 last_error = f"{type(exc).__name__}: {exc}"
-                if attempt < self.GOLSINYALI_MAX_RETRIES:
-                    time.sleep(min(self.GOLSINYALI_REQUEST_DELAY_SECONDS * attempt, self.GOLSINYALI_MAX_RETRY_WAIT_SECONDS))
+                if attempt < self.GOLSINYALI_MAX_RETRIES: time.sleep(min(self.GOLSINYALI_REQUEST_DELAY_SECONDS * attempt, self.GOLSINYALI_MAX_RETRY_WAIT_SECONDS))
 
-        detail = last_error or (f"HTTP {last_status}" if last_status else "Unknown error")
-        if last_body_hint and "http 429" not in detail.lower():
-            detail = f"{detail}; body={last_body_hint!r}"
-        raise RuntimeError(f"Golsinyali request failed for {url}: {detail}")
+        raise RuntimeError(f"Golsinyali request failed for {url}: {last_error or 'Unknown Error'}")
 
     @staticmethod
     def _golsinyali_compact_text(value):
-        value = str(value or "").lower()
-        value = value.replace("&", " and ")
-        value = re.sub(r"[^a-z0-9]+", " ", value)
-        return " ".join(value.split())
+        value = str(value or "").lower().replace("&", " and ")
+        return " ".join(re.sub(r"[^a-z0-9]+", " ", value).split())
 
     def _golsinyali_candidate_score(self, anchor_text, url):
         combined = self._golsinyali_compact_text(f"{anchor_text} {url}")
-        if not combined:
-            return 0
+        if not combined: return 0
 
         score = 0
         for match_key in self.master_matrix.keys():
             parts = [p.strip() for p in match_key.split(" vs ", 1)]
-            if len(parts) != 2:
-                continue
+            if len(parts) != 2: continue
             home = self._golsinyali_compact_text(parts[0])
             away = self._golsinyali_compact_text(parts[1])
             if home and home in combined: score += 2
             if away and away in combined: score += 2
             if home and away and home in combined and away in combined: score += 5
-
         return score
 
     def fetch_golsinyali_sync(self):
@@ -523,21 +445,14 @@ class ConsensusEngine:
                 candidates = anchor_data
 
             candidates = candidates[: self.GOLSINYALI_MAX_MATCH_PAGES]
-
             eat_tz = datetime.timezone(datetime.timedelta(hours=3))
             today_eat = datetime.datetime.now(datetime.timezone.utc).astimezone(eat_tz).date()
 
-            valid_count = 0
-            skipped_count = 0
-            failed_count = 0
-            matched_fixture_count = 0
-            new_fixture_count = 0
+            valid_count = skipped_count = failed_count = matched_fixture_count = new_fixture_count = 0
 
             for link, _anchor_text in candidates:
                 try:
-                    if self.GOLSINYALI_REQUEST_DELAY_SECONDS > 0:
-                        time.sleep(self.GOLSINYALI_REQUEST_DELAY_SECONDS)
-
+                    if self.GOLSINYALI_REQUEST_DELAY_SECONDS > 0: time.sleep(self.GOLSINYALI_REQUEST_DELAY_SECONDS)
                     match_html = self._fetch_golsinyali_html(link, referer=self.GOLSINYALI_PREDICTIONS_URL)
                     sports_event = self._golsinyali_extract_sports_event_jsonld(match_html)
                     if sports_event is None:
@@ -564,40 +479,22 @@ class ConsensusEngine:
                         skipped_count += 1
                         continue
 
-                    log_result = self.log_prediction_qa(
-                        "Golsinyali",
-                        metadata["home_team"],
-                        metadata["away_team"],
-                        prediction,
-                    )
-
+                    log_result = self.log_prediction_qa("Golsinyali", metadata["home_team"], metadata["away_team"], prediction)
                     if log_result is None:
                         failed_count += 1
                         continue
 
-                    if log_result["matched_existing_fixture"]:
-                        matched_fixture_count += 1
-                    else:
-                        new_fixture_count += 1
+                    if log_result["matched_existing_fixture"]: matched_fixture_count += 1
+                    else: new_fixture_count += 1
 
                     valid_count += 1
-
                 except Exception as exc:
                     failed_count += 1
 
-            self.diagnostics["Golsinyali_Detail"] = (
-                f"📊 Discovered: {len(anchor_data)} | Candidates: {len(candidates)} | "
-                f"Today predictions: {valid_count} | Matched: {matched_fixture_count} | "
-                f"New: {new_fixture_count} | Skipped: {skipped_count} | Failed: {failed_count}"
-            )
-
-            if valid_count > 0:
-                self.diagnostics["Golsinyali"] = f"🟢 OK ({valid_count} Today | {matched_fixture_count} Matched | {new_fixture_count} New | {skipped_count} Skipped | {failed_count} Failed)"
-            elif failed_count > 0 and skipped_count == 0:
-                self.diagnostics["Golsinyali"] = f"🔴 FAILED ({failed_count} page requests failed)"
-            else:
-                self.diagnostics["Golsinyali"] = f"🟡 NO USABLE PREDICTIONS ({skipped_count} Skipped | {failed_count} Failed)"
-
+            self.diagnostics["Golsinyali_Detail"] = f"📊 Discovered: {len(anchor_data)} | Candidates: {len(candidates)} | Today predictions: {valid_count} | Matched: {matched_fixture_count} | New: {new_fixture_count} | Skipped: {skipped_count} | Failed: {failed_count}"
+            if valid_count > 0: self.diagnostics["Golsinyali"] = f"🟢 OK ({valid_count} Today | {matched_fixture_count} Matched | {new_fixture_count} New | {skipped_count} Skipped | {failed_count} Failed)"
+            elif failed_count > 0 and skipped_count == 0: self.diagnostics["Golsinyali"] = f"🔴 FAILED ({failed_count} page requests failed)"
+            else: self.diagnostics["Golsinyali"] = f"🟡 NO USABLE PREDICTIONS ({skipped_count} Skipped | {failed_count} Failed)"
         except Exception as exc:
             self.diagnostics["Golsinyali"] = f"🔴 FAILED ({exc})"
 
@@ -608,11 +505,7 @@ class ConsensusEngine:
     EXPECTED90_PREDICTIONS_URL = f"{EXPECTED90_BASE_URL}/football-predictions-today"
     EXPECTED90_REQUEST_TIMEOUT = 30
     EXPECTED90_MAX_MATCH_PAGES = 60
-    EXPECTED90_USER_AGENT = (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/140.0 Safari/537.36"
-    )
+    EXPECTED90_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36"
 
     def _fetch_expected90_html(self, url, referer=None):
         headers = {
@@ -622,8 +515,7 @@ class ConsensusEngine:
             "Cache-Control": "no-cache",
             "Pragma": "no-cache",
         }
-        if referer:
-            headers["Referer"] = referer
+        if referer: headers["Referer"] = referer
 
         response = tls_requests.get(url, headers=headers, impersonate="chrome124", timeout=self.EXPECTED90_REQUEST_TIMEOUT)
 
@@ -631,22 +523,17 @@ class ConsensusEngine:
             if SCRAPER_API_KEY:
                 proxy_url = f"http://api.scraperapi.com?api_key={SCRAPER_API_KEY}&url={url}&premium=true"
                 r = requests.get(proxy_url, headers=headers, timeout=60)
-                if r.status_code == 200:
-                    return r.text
+                if r.status_code == 200: return r.text
             raise RuntimeError(f"Expected90 returned HTTP {response.status_code}")
 
         html = response.text
-        
         if "just a moment" in html.lower() or "cloudflare" in html.lower():
             if SCRAPER_API_KEY:
                 proxy_url = f"http://api.scraperapi.com?api_key={SCRAPER_API_KEY}&url={url}&premium=true&render=true"
                 r = requests.get(proxy_url, headers=headers, timeout=60)
-                if r.status_code == 200:
-                    return r.text
+                if r.status_code == 200: return r.text
 
-        if not html.strip():
-            raise RuntimeError("Expected90 returned an empty response.")
-
+        if not html.strip(): raise RuntimeError("Expected90 returned an empty response.")
         return html
 
     @staticmethod
@@ -656,11 +543,8 @@ class ConsensusEngine:
         for script in soup.find_all("script", type="application/ld+json"):
             raw = (script.string or script.get_text() or "").strip()
             if not raw: continue
-            try:
-                parsed = json.loads(raw)
-            except (TypeError, ValueError):
-                continue
-
+            try: parsed = json.loads(raw)
+            except (TypeError, ValueError): continue
             if isinstance(parsed, list): objects.extend(parsed)
             else: objects.append(parsed)
         return objects
@@ -673,8 +557,7 @@ class ConsensusEngine:
             graph = obj.get("@graph")
             if isinstance(graph, list):
                 for graph_item in graph:
-                    if isinstance(graph_item, dict) and graph_item.get("@type") == "SportsEvent":
-                        return graph_item
+                    if isinstance(graph_item, dict) and graph_item.get("@type") == "SportsEvent": return graph_item
         return None
 
     @staticmethod
@@ -682,15 +565,10 @@ class ConsensusEngine:
         if not value: return None
         text = str(value).strip()
         candidates = [text, text.replace("Z", "+00:00")]
-
         for candidate in candidates:
-            try:
-                parsed = datetime.datetime.fromisoformat(candidate)
-            except ValueError:
-                continue
-
-            if parsed.tzinfo is None:
-                parsed = parsed.replace(tzinfo=datetime.timezone.utc)
+            try: parsed = datetime.datetime.fromisoformat(candidate)
+            except ValueError: continue
+            if parsed.tzinfo is None: parsed = parsed.replace(tzinfo=datetime.timezone.utc)
             return parsed.astimezone(datetime.timezone.utc)
         return None
 
@@ -703,15 +581,13 @@ class ConsensusEngine:
         )
         match = pattern.search(str(description))
         if not match: return None
-
         try:
             return {
                 "HOME": float(match.group("home_pct")),
                 "DRAW": float(match.group("draw_pct")),
                 "AWAY": float(match.group("away_pct")),
             }
-        except (TypeError, ValueError):
-            return None
+        except (TypeError, ValueError): return None
 
     @staticmethod
     def _expected90_probability_to_selection(probabilities):
@@ -727,24 +603,19 @@ class ConsensusEngine:
         soup = BeautifulSoup(html, "html.parser")
         links = []
         seen = set()
-
         for anchor in soup.find_all("a", href=True):
             href = anchor["href"].strip()
             if "-vs-" not in href: continue
-
             if href.startswith("http"): url = href
             else: url = f"{self.EXPECTED90_BASE_URL}{href if href.startswith('/') else '/' + href}"
-
             if url in seen: continue
             seen.add(url)
             links.append(url)
-
         return links
 
     def _expected90_candidate_score(self, url):
         compact_url = self._expected90_compact_text(url)
         score = 0
-
         for match_key in self.master_matrix.keys():
             parts = [p.strip() for p in match_key.split(" vs ", 1)]
             if len(parts) != 2: continue
@@ -773,32 +644,25 @@ class ConsensusEngine:
             if scored_links:
                 scored_links.sort(key=lambda item: (-item[0], item[1]))
                 candidates = [url for _, url in scored_links[:self.EXPECTED90_MAX_MATCH_PAGES]]
-            else:
-                candidates = all_links[:self.EXPECTED90_MAX_MATCH_PAGES]
+            else: candidates = all_links[:self.EXPECTED90_MAX_MATCH_PAGES]
 
             eat_tz = datetime.timezone(datetime.timedelta(hours=3))
             now_utc = datetime.datetime.now(datetime.timezone.utc)
             today_eat = now_utc.astimezone(eat_tz).date()
 
-            valid_count = 0
-            skipped_count = 0
-            failed_count = 0
-            matched_fixture_count = 0
-            new_fixture_count = 0
+            valid_count = skipped_count = failed_count = matched_fixture_count = new_fixture_count = 0
 
             for link in candidates:
                 try:
                     html = self._fetch_expected90_html(link, referer=self.EXPECTED90_PREDICTIONS_URL)
                     objects = self._expected90_parse_json_ld(html)
                     sports_event = self._expected90_find_sports_event(objects)
-
                     if sports_event is None:
                         failed_count += 1
                         continue
 
                     home_data = sports_event.get("homeTeam")
                     away_data = sports_event.get("awayTeam")
-
                     if not isinstance(home_data, dict) or not isinstance(away_data, dict):
                         failed_count += 1
                         continue
@@ -806,20 +670,17 @@ class ConsensusEngine:
                     home = str(home_data.get("name") or "").strip()
                     away = str(away_data.get("name") or "").strip()
                     kickoff = self._expected90_parse_kickoff(sports_event.get("startDate"))
-
                     if not home or not away or kickoff is None:
                         failed_count += 1
                         continue
 
                     kickoff_eat = kickoff.astimezone(eat_tz)
-
                     if kickoff_eat.date() != today_eat or kickoff <= now_utc:
                         skipped_count += 1
                         continue
 
                     description = sports_event.get("description") or ""
                     probabilities = self._expected90_extract_probabilities(description)
-
                     if not probabilities:
                         skipped_count += 1
                         continue
@@ -830,32 +691,21 @@ class ConsensusEngine:
                         continue
 
                     log_result = self.log_prediction_qa("Expected90", home, away, prediction)
-
                     if log_result is None:
                         failed_count += 1
                         continue
 
                     if log_result["matched_existing_fixture"]: matched_fixture_count += 1
                     else: new_fixture_count += 1
-
                     valid_count += 1
 
                 except Exception as exc:
                     failed_count += 1
 
-            self.diagnostics["Expected90_Detail"] = (
-                f"📊 Discovered: {len(all_links)} | Candidates: {len(candidates)} | "
-                f"Today predictions: {valid_count} | Matched: {matched_fixture_count} | "
-                f"New: {new_fixture_count} | Skipped: {skipped_count} | Failed: {failed_count}"
-            )
-
-            if valid_count > 0:
-                self.diagnostics["Expected90"] = f"🟢 OK ({valid_count} Today | {matched_fixture_count} Matched | {new_fixture_count} New | {skipped_count} Skipped | {failed_count} Failed)"
-            elif failed_count > 0:
-                self.diagnostics["Expected90"] = f"🔴 FAILED ({failed_count} page requests failed)"
-            else:
-                self.diagnostics["Expected90"] = f"🟡 NO USABLE PREDICTIONS ({skipped_count} Skipped)"
-
+            self.diagnostics["Expected90_Detail"] = f"📊 Discovered: {len(all_links)} | Candidates: {len(candidates)} | Today predictions: {valid_count} | Matched: {matched_fixture_count} | New: {new_fixture_count} | Skipped: {skipped_count} | Failed: {failed_count}"
+            if valid_count > 0: self.diagnostics["Expected90"] = f"🟢 OK ({valid_count} Today | {matched_fixture_count} Matched | {new_fixture_count} New | {skipped_count} Skipped | {failed_count} Failed)"
+            elif failed_count > 0: self.diagnostics["Expected90"] = f"🔴 FAILED ({failed_count} page requests failed)"
+            else: self.diagnostics["Expected90"] = f"🟡 NO USABLE PREDICTIONS ({skipped_count} Skipped)"
         except Exception as exc:
             self.diagnostics["Expected90"] = f"🔴 FAILED ({exc})"
 
@@ -881,24 +731,20 @@ class ConsensusEngine:
         if not isinstance(value, str): return None
         value = value.strip()
         if not value: return None
-
         formats = ("%m/%d/%Y %I:%M:%S %p", "%m/%d/%Y %I:%M %p", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M")
         for fmt in formats:
             try: return datetime.datetime.strptime(value, fmt).replace(tzinfo=datetime.timezone.utc)
             except ValueError: continue
-
         try:
             parsed = datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
             if parsed.tzinfo is None: parsed = parsed.replace(tzinfo=datetime.timezone.utc)
             return parsed.astimezone(datetime.timezone.utc)
-        except ValueError:
-            return None
+        except ValueError: return None
 
     @staticmethod
     def _socceraitips_normalize_market(bet_type, prediction_display):
         normalized_bet_type = bet_type.strip().lower() if isinstance(bet_type, str) else ""
         normalized_display = prediction_display.strip().upper() if isinstance(prediction_display, str) else ""
-
         if normalized_bet_type == "over_2_5" and normalized_display == "OVER 2.5": return "OVER_2.5"
         if normalized_bet_type in {"kg_var", "btts"} and normalized_display == "BTTS": return "BTTS"
         return None
@@ -908,28 +754,23 @@ class ConsensusEngine:
         normalized_bet_type = bet_type.strip().lower() if isinstance(bet_type, str) else ""
         normalized_prediction = prediction.strip().upper() if isinstance(prediction, str) else ""
         normalized_display = prediction_display.strip().upper() if isinstance(prediction_display, str) else ""
-
         if normalized_bet_type == "over_2_5":
             if normalized_prediction == "ÜST" or normalized_display == "OVER 2.5": return "OVER_2.5"
             return None
-
         if normalized_bet_type in {"kg_var", "btts"}:
             if normalized_prediction == "VAR" or normalized_display == "BTTS": return "BTTS_YES"
             return None
-
         return None
 
     def _socceraitips_find_existing_match(self, home, away):
         raw_key = f"{self.clean_team_name(home)} vs {self.clean_team_name(away)}"
         best_key = raw_key
         best_ratio = 0.0
-
         for existing_key in self.master_matrix.keys():
             ratio = difflib.SequenceMatcher(None, raw_key.lower(), existing_key.lower()).ratio()
             if ratio > best_ratio:
                 best_ratio = ratio
                 best_key = existing_key
-
         if best_ratio >= 0.75: return best_key, True
         return raw_key, False
 
@@ -949,7 +790,6 @@ class ConsensusEngine:
                 timeout=self.SOCCERAITIPS_REQUEST_TIMEOUT,
             )
             response.raise_for_status()
-
             payload = response.json()
             data = payload.get("data")
             matches = data.get("matches")
@@ -958,18 +798,13 @@ class ConsensusEngine:
             now_utc = datetime.datetime.now(datetime.timezone.utc)
             today_eat = now_utc.astimezone(eat_tz).date()
 
-            valid_count = 0
-            matched_count = 0
-            new_count = 0
-            skipped_count = 0
-            failed_count = 0
+            valid_count = matched_count = new_count = skipped_count = failed_count = 0
             secondary_records = []
 
             for match in matches:
                 if not isinstance(match, dict):
                     skipped_count += 1
                     continue
-
                 home = match.get("home_team")
                 away = match.get("away_team")
                 match_time = match.get("match_time")
@@ -1000,7 +835,6 @@ class ConsensusEngine:
                     continue
 
                 match_key, matched_existing = self._socceraitips_find_existing_match(home, away)
-
                 record = {
                     "source": "SoccerAiTips",
                     "match": match_key,
@@ -1017,23 +851,16 @@ class ConsensusEngine:
                     "league": match.get("league"),
                     "matched_existing_fixture": matched_existing,
                 }
-
                 secondary_records.append(record)
                 valid_count += 1
-
                 if matched_existing: matched_count += 1
                 else: new_count += 1
 
             self.secondary_market_data.extend(secondary_records)
             self.diagnostics["SoccerAiTips_Detail"] = f"📊 Discovered: {len(matches)} | Today markets: {valid_count} | Matched: {matched_count} | New: {new_count} | Skipped: {skipped_count} | Failed: {failed_count}"
-
-            if valid_count > 0:
-                self.diagnostics["SoccerAiTips"] = f"🟢 OK ({valid_count} Secondary Markets | {matched_count} Matched | {new_count} New | {skipped_count} Skipped | {failed_count} Failed)"
-            elif failed_count > 0:
-                self.diagnostics["SoccerAiTips"] = f"🔴 FAILED ({failed_count} Invalid/failed records)"
-            else:
-                self.diagnostics["SoccerAiTips"] = f"🟡 NO USABLE SECONDARY MARKETS ({skipped_count} Skipped)"
-
+            if valid_count > 0: self.diagnostics["SoccerAiTips"] = f"🟢 OK ({valid_count} Secondary Markets | {matched_count} Matched | {new_count} New | {skipped_count} Skipped | {failed_count} Failed)"
+            elif failed_count > 0: self.diagnostics["SoccerAiTips"] = f"🔴 FAILED ({failed_count} Invalid/failed records)"
+            else: self.diagnostics["SoccerAiTips"] = f"🟡 NO USABLE SECONDARY MARKETS ({skipped_count} Skipped)"
         except Exception as exc:
             self.diagnostics["SoccerAiTips"] = f"🔴 FAILED ({exc})"
 
@@ -1057,7 +884,6 @@ class ConsensusEngine:
             "Accept-Language": "en-US,en;q=0.9",
             "Cache-Control": "no-cache",
         }
-
         try:
             response = requests.get(url, headers=headers, timeout=cls.NVTIPS_REQUEST_TIMEOUT)
         except requests.RequestException as exc:
@@ -1069,8 +895,7 @@ class ConsensusEngine:
                     proxy_url = "https://api.scraperapi.com/"
                     proxy_response = requests.get(proxy_url, params={"api_key": SCRAPER_API_KEY, "url": url, "premium": "true", "country_code": "us"}, headers=headers, timeout=60)
                     if proxy_response.status_code == 200 and proxy_response.text.strip(): return proxy_response.text
-                except requests.RequestException:
-                    pass
+                except requests.RequestException: pass
             raise RuntimeError(f"NVtips returned HTTP {response.status_code}")
 
         html = response.text
@@ -1115,7 +940,6 @@ class ConsensusEngine:
         soup = BeautifulSoup(html, "html.parser")
         rows = soup.select("div.nv-row")
         extracted = []
-
         for row in rows:
             teams = cls._nvtips_extract_team_names(row)
             if teams is None: continue
@@ -1144,12 +968,7 @@ class ConsensusEngine:
             html = self._fetch_nvtips_html(today_eat)
             rows = self._nvtips_extract_rows(html)
 
-            valid_count = 0
-            matched_fixture_count = 0
-            new_fixture_count = 0
-            skipped_count = 0
-            failed_count = 0
-
+            valid_count = matched_fixture_count = new_fixture_count = skipped_count = failed_count = 0
             for row in rows:
                 try:
                     home = row["home_team"]
@@ -1161,14 +980,12 @@ class ConsensusEngine:
                         continue
 
                     log_result = self.log_prediction_qa("NVtips", home, away, prediction)
-
                     if log_result is None:
                         failed_count += 1
                         continue
 
                     if log_result["matched_existing_fixture"]: matched_fixture_count += 1
                     else: new_fixture_count += 1
-
                     valid_count += 1
 
                 except Exception as exc:
@@ -1176,13 +993,9 @@ class ConsensusEngine:
 
             self.diagnostics["NVtips_Detail"] = f"📊 Discovered: {len(rows)} | Today predictions: {valid_count} | Matched: {matched_fixture_count} | New: {new_fixture_count} | Skipped: {skipped_count} | Failed: {failed_count}"
 
-            if valid_count > 0:
-                self.diagnostics["NVtips"] = f"🟢 OK ({valid_count} Today | {matched_fixture_count} Matched | {new_fixture_count} New | {skipped_count} Skipped | {failed_count} Failed)"
-            elif failed_count > 0:
-                self.diagnostics["NVtips"] = f"🔴 FAILED ({failed_count} row processing failures)"
-            else:
-                self.diagnostics["NVtips"] = f"🟡 NO USABLE PREDICTIONS ({len(rows)} Rows)"
-
+            if valid_count > 0: self.diagnostics["NVtips"] = f"🟢 OK ({valid_count} Today | {matched_fixture_count} Matched | {new_fixture_count} New | {skipped_count} Skipped | {failed_count} Failed)"
+            elif failed_count > 0: self.diagnostics["NVtips"] = f"🔴 FAILED ({failed_count} row processing failures)"
+            else: self.diagnostics["NVtips"] = f"🟡 NO USABLE PREDICTIONS ({len(rows)} Rows)"
         except Exception as exc:
             self.diagnostics["NVtips"] = f"🔴 FAILED ({exc})"
 
@@ -1204,7 +1017,8 @@ class ConsensusEngine:
             return
 
         max_attempts = 4
-        req_timeout = 90
+        # FIX: Increased timeout to 100s so ScraperAPI has plenty of time to solve Cloudflare JS
+        req_timeout = 100
         last_status = None
         target_url = cfg["url"]
 
@@ -1224,20 +1038,15 @@ class ConsensusEngine:
                 r = None
 
                 # =======================================================
-                # ADAPTIVE MULTI-NODE WATERFALL ROUTING (To Bypass Cloudflare 403s)
+                # ADAPTIVE MULTI-NODE WATERFALL ROUTING WITH CLOUDFLARE JS BYPASS
                 # =======================================================
-                if site_name == "WinDrawWin":
-                    if attempt == 1 and SCRAPER_API_KEY:
-                        r = requests.get("http://api.scraperapi.com/", params={"api_key": SCRAPER_API_KEY, "url": active_url, "premium": "true", "country_code": "uk"}, timeout=req_timeout)
-                    elif attempt == 2 and SCRAPER_API_KEY:
-                        r = requests.get("http://api.scraperapi.com/", params={"api_key": SCRAPER_API_KEY, "url": active_url, "premium": "true", "country_code": "us"}, timeout=req_timeout)
-                    elif attempt == 3:
-                        r = tls_requests.get(active_url, impersonate="chrome124", timeout=req_timeout)
-                    elif attempt == 4 and SCRAPER_API_KEY:
-                        r = requests.get("http://api.scraperapi.com/", params={"api_key": SCRAPER_API_KEY, "url": active_url, "premium": "true"}, timeout=req_timeout)
-                elif site_name == "SoccerVista":
+                if site_name in ["WinDrawWin", "SoccerVista"]:
                     if attempt <= 3 and SCRAPER_API_KEY:
-                        r = requests.get("http://api.scraperapi.com/", params={"api_key": SCRAPER_API_KEY, "url": active_url, "premium": "true", "render": "true"}, timeout=req_timeout)
+                        # 'antibot=true' is the premium ScraperAPI solution for Turnstile
+                        params = {"api_key": SCRAPER_API_KEY, "url": active_url, "premium": "true", "antibot": "true"}
+                        if attempt == 1:
+                            params["country_code"] = "uk"
+                        r = requests.get("http://api.scraperapi.com/", params=params, timeout=req_timeout)
                     else:
                         r = tls_requests.get(active_url, impersonate="chrome124", timeout=req_timeout)
                 else:
@@ -1453,7 +1262,7 @@ class ConsensusEngine:
                     continue
 
             except requests.exceptions.ReadTimeout:
-                last_status = "ReadTimeout (ScraperAPI needs more time)"
+                last_status = "TIMEOUT (ScraperAPI needs more time)"
                 time.sleep(2 * attempt)
                 continue
             except Exception:
@@ -1474,7 +1283,7 @@ class ConsensusEngine:
             "Expected90",
             "Statarea",
             "Vitibet",
-            "Zulubet", # PredictZ replaced
+            "Zulubet", 
             "WinDrawWin",
             "SoccerVista",
             "NVtips",
@@ -1571,7 +1380,7 @@ class ConsensusEngine:
         self.diagnostics["Core_4Plus"] = f"🟢 {len(core_ai_input_data)} qualified matches"
         self.diagnostics["Fallback_3Plus"] = f"{'🟡 ACTIVE' if fallback_active else '⚪ STANDBY'} ({len(fallback_ai_input_data)} research candidates)"
         self.diagnostics["Consensus_Mode"] = "🔬 DEEP RESEARCH FALLBACK (3+)" if fallback_active else "🛡️ STRICT CORE ONLY (4+)"
-        self.diagnostics["Ticket_Pool_Requirement"] = f"1 Ticket × 3 primary = 3 slots | Reserve pool = {len(fallback_ai_input_data)} candidates"
+        self.diagnostics["Ticket_Pool_Requirement"] = f"2 Tickets × 3 primary = 6 slots | Reserve pool = {len(fallback_ai_input_data)} candidates"
 
         return (
             core_matches,
@@ -1585,17 +1394,15 @@ class ConsensusEngine:
         )
 
     # ======================================================================
-    # PURE PYTHON ALGORITHMIC TICKET BUILDER (AI COMPLETELY REMOVED)
-    # Strictly 1 Ticket / 3 Main Matches / 1 Reserve (Draw prioritised)
+    # PURE PYTHON ALGORITHMIC TICKET BUILDER
+    # (Exactly 2 Balanced Tickets | 50% Stake Each | Draws to Reserve ONLY)
     # ======================================================================
     def build_algorithmic_ticket(self, core_data, fallback_data, active_corner_teams):
         self.diagnostics["AI_Handshake"] = "🟢 ALGORITHMIC ENGINE ENABLED (AI BYPASSED)"
-        self.diagnostics["AI_Status"] = "🟢 Optimization Complete (Native Python Sorting)"
+        self.diagnostics["AI_Status"] = "🟢 Optimization Complete (Native Python Sorting - 2 Tickets)"
 
-        # Merge pools. Core data naturally ranks higher due to having 4+ agreement.
         combined_data = core_data + fallback_data
         
-        # Sort logic: Most backing sites first, least contradictions second
         def get_score(match_data):
             backing_count = match_data.get("agreement_count", 0)
             contradiction_count = len(match_data.get("contradictions", []))
@@ -1603,56 +1410,80 @@ class ConsensusEngine:
 
         sorted_matches = sorted(combined_data, key=get_score, reverse=True)
         
-        # Separate Draws (X) from Wins (1, 2)
+        # Strictly segregate Home/Away Wins vs Draws (X)
         main_candidates = [m for m in sorted_matches if m['consensus_pick'] in ["1", "2"]]
         draw_candidates = [m for m in sorted_matches if m['consensus_pick'] == "X"]
         
-        final_picks = []
-        reserve_pick = None
+        final_main_picks = []
         
-        # 1. Fill the top 3 with absolute safest Home/Away Wins
+        # Try to gather exactly 6 safe wins for our 2 tickets (3 each)
         for m in main_candidates:
-            final_picks.append(f"{m['match']} ➔ {m['consensus_pick']}")
-            if len(final_picks) == 3:
+            pick_str = f"{m['match']} ➔ {m['consensus_pick']}"
+            if pick_str not in final_main_picks:
+                final_main_picks.append(pick_str)
+            if len(final_main_picks) == 6:
                 break
                 
-        # 2. If we don't have 3 solid wins, intelligently fill with high-probability corners
-        if len(final_picks) < 3:
+        # If we fall short of 6 main picks, securely fill with Corners to maintain safety
+        if len(final_main_picks) < 6:
             for corner in active_corner_teams:
                 corner_pick = f"{corner['match']} ➔ Over 8.5 Corners (Avg: {corner['avg_corners']})"
-                if corner_pick not in final_picks:
-                    final_picks.append(corner_pick)
-                if len(final_picks) == 3:
+                if corner_pick not in final_main_picks:
+                    final_main_picks.append(corner_pick)
+                if len(final_main_picks) == 6:
+                    break
+        
+        # Build Reserve Picks (Priority: High-Agreement Draws -> Leftover Wins -> Corners)
+        reserve_picks = []
+        for d in draw_candidates:
+            pick_str = f"{d['match']} ➔ {d['consensus_pick']}"
+            if pick_str not in reserve_picks and pick_str not in final_main_picks:
+                reserve_picks.append(pick_str)
+            if len(reserve_picks) == 2:
+                break
+                
+        if len(reserve_picks) < 2:
+            leftovers = [f"{m['match']} ➔ {m['consensus_pick']}" for m in main_candidates]
+            for pick_str in leftovers:
+                if pick_str not in final_main_picks and pick_str not in reserve_picks:
+                    reserve_picks.append(pick_str)
+                if len(reserve_picks) == 2:
                     break
                     
-        if not final_picks:
-            return "No high-conviction matches found today to safely build an elite ticket."
-            
-        # 3. SELECT THE RESERVE PICK: Push "Draws (X)" exclusively to the reserve slot
-        if draw_candidates:
-            reserve_pick = f"{draw_candidates[0]['match']} ➔ {draw_candidates[0]['consensus_pick']}"
-        else:
-            # Fallback if no draws exist: use a 4th win or a corner
-            leftovers = [m for m in main_candidates if f"{m['match']} ➔ {m['consensus_pick']}" not in final_picks]
-            if leftovers:
-                reserve_pick = f"{leftovers[0]['match']} ➔ {leftovers[0]['consensus_pick']}"
-            else:
-                for corner in active_corner_teams:
-                    corner_pick = f"{corner['match']} ➔ Over 8.5 Corners (Avg: {corner['avg_corners']})"
-                    if corner_pick not in final_picks:
-                        reserve_pick = corner_pick
-                        break
+        if len(reserve_picks) < 2:
+            for corner in active_corner_teams:
+                corner_pick = f"{corner['match']} ➔ Over 8.5 Corners (Avg: {corner['avg_corners']})"
+                if corner_pick not in final_main_picks and corner_pick not in reserve_picks:
+                    reserve_picks.append(corner_pick)
+                if len(reserve_picks) == 2:
+                    break
 
-        # Format the perfect ticket output
-        ticket_text = "🤖 **TITAN ALGORITHMIC TICKET** 🤖\n\n"
-        ticket_text += "🛡️ **Ticket 1: Elite Ironclad (100% of Daily Stake)**\n"
+        # Abort cleanly if there is a severe lack of data across the board
+        if len(final_main_picks) < 3:
+            return "No high-conviction matches found today to safely build tickets."
+            
+        ticket1_mains = final_main_picks[:3]
+        ticket2_mains = final_main_picks[3:6]
         
-        for pick in final_picks:
+        reserve1 = reserve_picks[0] if len(reserve_picks) > 0 else None
+        reserve2 = reserve_picks[1] if len(reserve_picks) > 1 else None
+        
+        # Structure the final Telegram output
+        ticket_text = "🤖 **TITAN ALGORITHMIC TICKETS** 🤖\n\n"
+        
+        ticket_text += "🛡️ **Ticket 1: Premium Slip (50% of Daily Stake)**\n"
+        for pick in ticket1_mains:
             ticket_text += f"• {pick}\n"
+        if reserve1:
+            ticket_text += f"🔄 [RESERVE PICK]: {reserve1}\n"
             
-        if reserve_pick:
-            ticket_text += f"🔄 [RESERVE PICK]: {reserve_pick}\n"
-            
+        if ticket2_mains:
+            ticket_text += "\n🛡️ **Ticket 2: Premium Slip (50% of Daily Stake)**\n"
+            for pick in ticket2_mains:
+                ticket_text += f"• {pick}\n"
+            if reserve2:
+                ticket_text += f"🔄 [RESERVE PICK]: {reserve2}\n"
+                
         return ticket_text
 
     def load_memory(self):
@@ -1790,7 +1621,6 @@ class ConsensusEngine:
         else:
             self.diagnostics["ScraperAPI"] = "🟡 NOT CONFIGURED (Direct requests only)"
 
-        # Gemini fully disabled from config logs
         self.diagnostics["Gemini"] = "⚪ DISABLED (Using Native Algorithmic Sorter)"
 
         if is_already_locked:
