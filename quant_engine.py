@@ -17,6 +17,10 @@ TELEGRAM_TOKEN = os.environ.get("QUANT_TELEGRAM_TOKEN") or os.environ.get("TRACK
 TELEGRAM_CHAT_ID = os.environ.get("QUANT_TELEGRAM_CHAT_ID") or os.environ.get("TRACKER_TRACKER_TELEGRAM_CHAT_ID") or os.environ.get("TRACKER_TELEGRAM_CHAT_ID")
 SCRAPER_API_KEY = (os.environ.get("SCRAPER_API_KEY") or "").strip()
 
+# GIST CREDENTIALS FOR BOT-TO-BOT SYNC
+GIST_ID = os.environ.get("GIST_ID")
+GIST_TOKEN = os.environ.get("GIST_TOKEN")
+
 # LOCKED DOWN FOR PRODUCTION (Prevents re-scraping after the first successful run of the day)
 FORCE_RUN = False 
 
@@ -93,6 +97,38 @@ class ConsensusEngine:
         self.secondary_market_data = []
         self.diagnostics = {}
         self.golsinyali_session = tls_requests.Session(impersonate="chrome124")
+        self.finalized_match_keys = []
+
+    def save_picks_to_gist(self):
+        if not GIST_ID or not GIST_TOKEN:
+            self.diagnostics["GistSync"] = "🟡 MISSING CREDENTIALS"
+            return
+            
+        url = f"https://api.github.com/gists/{GIST_ID}"
+        headers = {
+            "Authorization": f"token {GIST_TOKEN}",
+            "Accept": "application/vnd.github.v3+json"
+        }
+        
+        payload = {
+            "files": {
+                "quant_state.json": {
+                    "content": json.dumps({
+                        "date": str(datetime.datetime.utcnow().date()),
+                        "bot_a_picks": self.finalized_match_keys
+                    })
+                }
+            }
+        }
+        
+        try:
+            r = requests.patch(url, headers=headers, json=payload, timeout=15)
+            if r.status_code == 200:
+                self.diagnostics["GistSync"] = f"🟢 OK (Pushed {len(self.finalized_match_keys)} exclusions)"
+            else:
+                self.diagnostics["GistSync"] = f"🔴 FAILED (HTTP {r.status_code})"
+        except Exception:
+            self.diagnostics["GistSync"] = "🔴 FAILED (Timeout)"
 
     def check_scraperapi_balance(self):
         if not SCRAPER_API_KEY: 
@@ -633,6 +669,7 @@ class ConsensusEngine:
             pick_str = f"{m['match']} ➔ {m['consensus_pick']}"
             if pick_str not in final_main_picks:
                 final_main_picks.append(pick_str)
+                self.finalized_match_keys.append(m['match'])
             if len(final_main_picks) == 6:
                 break
                 
@@ -642,6 +679,7 @@ class ConsensusEngine:
                 corner_pick = f"{corner['match']} ➔ Over 8.5 Corners (Avg: {corner['avg_corners']})"
                 if corner_pick not in final_main_picks:
                     final_main_picks.append(corner_pick)
+                    self.finalized_match_keys.append(corner['match'])
                 if len(final_main_picks) == 6:
                     break
         
@@ -651,6 +689,7 @@ class ConsensusEngine:
             pick_str = f"{d['match']} ➔ {d['consensus_pick']}"
             if pick_str not in reserve_picks and pick_str not in final_main_picks:
                 reserve_picks.append(pick_str)
+                self.finalized_match_keys.append(d['match'])
             if len(reserve_picks) == 2:
                 break
                 
@@ -659,6 +698,8 @@ class ConsensusEngine:
             for pick_str in leftovers:
                 if pick_str not in final_main_picks and pick_str not in reserve_picks:
                     reserve_picks.append(pick_str)
+                    match_key = pick_str.split(" ➔ ")[0]
+                    self.finalized_match_keys.append(match_key)
                 if len(reserve_picks) == 2:
                     break
                     
@@ -667,6 +708,7 @@ class ConsensusEngine:
                 corner_pick = f"{corner['match']} ➔ Over 8.5 Corners (Avg: {corner['avg_corners']})"
                 if corner_pick not in final_main_picks and corner_pick not in reserve_picks:
                     reserve_picks.append(corner_pick)
+                    self.finalized_match_keys.append(corner['match'])
                 if len(reserve_picks) == 2:
                     break
 
@@ -682,6 +724,7 @@ class ConsensusEngine:
                 corner_pick = f"{corner['match']} ➔ Over 8.5 Corners (Avg: {corner['avg_corners']})"
                 if corner_pick not in ticket1_mains and corner_pick not in ticket2_mains:
                     ticket2_mains.append(corner_pick)
+                    self.finalized_match_keys.append(corner['match'])
                 if len(ticket2_mains) == 3:
                     break
 
@@ -887,11 +930,15 @@ class ConsensusEngine:
             if should_lock: self.diagnostics["DailyLock"] = f"🟢 LOCKED NEW DATA FOR {today_date}"
             else: self.diagnostics["DailyLock"] = f"⏳ PREVIEW (Will Lock At 05:00 EAT)"
 
+            # TRIGGER GIST PUSH FOR BOT B
+            if algorithmic_message:
+                self.save_picks_to_gist()
+
         settled_reports = self.settle_pending_tickets(memory)
 
         if not is_already_locked or settled_reports:
             msg = ""
-            if fallback_active:
+            if "fallback_active" in locals() and fallback_active:
                 msg += "🤝 **RAW CONSENSUS DATA (3+ SITES AGREEMENT)** 🤝\n\n"
             else:
                 msg += "🤝 **RAW CONSENSUS DATA (4+ SITES AGREEMENT)** 🤝\n\n"
@@ -911,7 +958,7 @@ class ConsensusEngine:
             essential_keys = [
                 "Telegram", "ScraperAPICredits", "Statarea", "Vitibet", 
                 "Zulubet", "WinDrawWin", "SoccerVista", "Golsinyali", 
-                "SoccerAiTips", "CornersEngine", "QuantEngine", "DailyLock"
+                "SoccerAiTips", "CornersEngine", "QuantEngine", "GistSync", "DailyLock"
             ]
             for k in essential_keys:
                 if k in self.diagnostics:
