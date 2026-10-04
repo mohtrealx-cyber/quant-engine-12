@@ -1074,5 +1074,27 @@
         ],
         "ai_optimized_message": "\ud83e\udd16 **TITAN ALGORITHMIC TICKETS** \ud83e\udd16\n\n\ud83d\udee1\ufe0f **Ticket 1: Premium Slip (50% of Daily Stake)**\n\u2022 Stromsgodset vs Asane \u2794 1\n\u2022 Harrogate Town vs Afc Hornchurch \u2794 1\n\u2022 Belarus vs San Marino \u2794 1\n\ud83d\udd04 [RESERVE PICK]: Finland vs Albania \u2794 X\n\n\ud83d\udee1\ufe0f **Ticket 2: Premium Slip (50% of Daily Stake)**\n\u2022 Switzerland vs Slovenia \u2794 1\n\u2022 Cray Wanderers vs Chippenham Town \u2794 1\n\u2022 Marine Fc vs Warrington Town \u2794 1\n\ud83d\udd04 [RESERVE PICK]: Mulbarton Wanderers vs Gloucester City \u2794 X\n",
         "tickets": []
+    },
+    "2026-10-04": {
+        "locked": true,
+        "agreed_matches": [
+            "\u2022 **Netherlands vs Serbia** \u2794 1\n  \u21b3 \u2705 Backed by: `Zulubet + Statarea + Vitibet + SoccerVista`\n  \u21b3 \u26a0\ufe0f WinDrawWin backed: X\n  \u21b3 \u26aa Golsinyali: Not Listed\n",
+            "\u2022 **Portugal vs Norway** \u2794 1\n  \u21b3 \u2705 Backed by: `Zulubet + Statarea + Vitibet + SoccerVista`\n  \u21b3 \u26a0\ufe0f WinDrawWin backed: X\n  \u21b3 \u26aa Golsinyali: Not Listed\n"
+        ],
+        "ai_optimized_message": "\ud83e\udd16 **TITAN ALGORITHMIC TICKETS** \ud83e\udd16\n\n\ud83d\udee1\ufe0f **Ticket 1: Premium Slip (50% of Daily Stake)**\n\u2022 Netherlands vs Serbia \u2794 1\n\u2022 Portugal vs Norway \u2794 1\n\u2022 Comunicaciones vs Flandria \u2794 1\n\ud83d\udd04 [RESERVE PICK]: Portugal vs Norway \u2794 Over 8.5 Corners (Avg: 9.0)\n\n\ud83d\udee1\ufe0f **Ticket 2: Premium Slip (50% of Daily Stake)**\n\u2022 San Martin S.J. vs Almagro \u2794 1\n\u2022 Greece vs Germany \u2794 Over 8.5 Corners (Avg: 9.0)\n\u2022 Netherlands vs Serbia \u2794 Over 8.5 Corners (Avg: 9.0)\n\ud83d\udd04 [RESERVE PICK]: Bahamas vs Virgin Islands \u2794 Over 8.5 Corners (Avg: 8.5)\n",
+        "tickets": [
+            {
+                "match": "Netherlands vs Serbia",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Portugal vs Norway",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            }
+        ]
     }
 }
