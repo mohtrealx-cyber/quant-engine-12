@@ -1,9 +1,9 @@
-name: Quant Engine Automation
+name: Quant Engine Automation (Bot B)
 
 on:
   schedule:
-    # 02:00 UTC = 05:00 EAT
-    - cron: '0 2 * * *'
+    # 02:30 UTC = 05:30 EAT (Staggered 30 minutes after Bot A)
+    - cron: '30 2 * * *'
 
   workflow_dispatch:
     inputs:
@@ -31,7 +31,7 @@ jobs:
       # 1. CHECKOUT CURRENT MAIN BRANCH
       # ============================================================
       - name: Checkout Repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
         with:
           ref: main
           fetch-depth: 0
@@ -94,7 +94,7 @@ jobs:
       # 3. SET UP PYTHON
       # ============================================================
       - name: Set up Python
-        uses: actions/setup-python@v7
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
@@ -130,6 +130,10 @@ jobs:
 
           SCRAPER_API_KEY: ${{ secrets.SCRAPER_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          
+          # NEW: GIST SECRETS INJECTED HERE
+          GIST_ID: ${{ secrets.GIST_ID }}
+          GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
 
           FORCE_RUN: ${{ inputs.force_run }}
 
