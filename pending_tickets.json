@@ -1078,11 +1078,71 @@
     "2026-10-04": {
         "locked": true,
         "agreed_matches": [
-            "\u2022 **Netherlands vs Serbia** \u2794 1\n  \u21b3 \u2705 Backed by: `Zulubet + Statarea + Vitibet + SoccerVista`\n  \u21b3 \u26a0\ufe0f WinDrawWin backed: X\n  \u21b3 \u26aa Golsinyali: Not Listed\n",
-            "\u2022 **Portugal vs Norway** \u2794 1\n  \u21b3 \u2705 Backed by: `Zulubet + Statarea + Vitibet + SoccerVista`\n  \u21b3 \u26a0\ufe0f WinDrawWin backed: X\n  \u21b3 \u26aa Golsinyali: Not Listed\n"
+            "\u2022 **Bryne vs Lyn** \u2794 1\n  \u21b3 \u2705 Backed by: `Zulubet + Statarea + WinDrawWin + Vitibet`\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
+            "\u2022 **Vvv Venlo vs Roda** \u2794 1\n  \u21b3 \u2705 Backed by: `Zulubet + WinDrawWin + Vitibet`\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
+            "\u2022 **Sporting Gijon vs Celta De Vigo Ii** \u2794 1\n  \u21b3 \u2705 Backed by: `Zulubet + WinDrawWin + Vitibet`\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
+            "\u2022 **Kosovo vs Austria** \u2794 X\n  \u21b3 \u2705 Backed by: `Zulubet + Vitibet + SoccerVista`\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26a0\ufe0f WinDrawWin backed: 1\n",
+            "\u2022 **Malta vs Andorra** \u2794 1\n  \u21b3 \u2705 Backed by: `Zulubet + WinDrawWin + Vitibet + SoccerVista`\n  \u21b3 \u26aa Statarea: Not Listed\n",
+            "\u2022 **Huracan vs Aldosivi** \u2794 1\n  \u21b3 \u2705 Backed by: `Zulubet + WinDrawWin + Vitibet + SoccerVista`\n  \u21b3 \u26aa Statarea: Not Listed\n",
+            "\u2022 **San Telmo vs Almirante Brown** \u2794 1\n  \u21b3 \u2705 Backed by: `WinDrawWin + Vitibet + SoccerVista`\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26a0\ufe0f Zulubet backed: X\n",
+            "\u2022 **Netherlands vs Serbia** \u2794 1\n  \u21b3 \u2705 Backed by: `Zulubet + Statarea + WinDrawWin + Vitibet + SoccerVista`\n",
+            "\u2022 **Portugal vs Norway** \u2794 1\n  \u21b3 \u2705 Backed by: `Zulubet + Statarea + WinDrawWin + Vitibet + SoccerVista`\n",
+            "\u2022 **Rep. Of Ireland vs Israel** \u2794 1\n  \u21b3 \u2705 Backed by: `Zulubet + WinDrawWin + Vitibet`\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
+            "\u2022 **Girona vs Mallorca** \u2794 1\n  \u21b3 \u2705 Backed by: `Zulubet + WinDrawWin + Vitibet`\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
+            "\u2022 **Castellon vs Ad Ceuta** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + WinDrawWin + Vitibet`\n  \u21b3 \u26aa Zulubet: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
+            "\u2022 **Cucuta vs Pereira** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + WinDrawWin + Vitibet`\n  \u21b3 \u26aa Zulubet: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
+            "\u2022 **Potenza vs Az Picerno** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + WinDrawWin + Vitibet`\n  \u21b3 \u26aa Zulubet: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
+            "\u2022 **San Martin S.J. vs Almagro** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + WinDrawWin + Vitibet + SoccerVista`\n  \u21b3 \u26aa Zulubet: Not Listed\n",
+            "\u2022 **Chaco For Ever vs Defensores De Belgrano** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + WinDrawWin + Vitibet`\n  \u21b3 \u26aa Zulubet: Not Listed\n  \u21b3 \u26a0\ufe0f SoccerVista backed: X\n",
+            "\u2022 **Javor vs Borac Cacak** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + WinDrawWin + Vitibet`\n  \u21b3 \u26aa Zulubet: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
+            "\u2022 **Comunicaciones vs Flandria** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + SoccerVista`\n  \u21b3 \u26aa Zulubet: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n",
+            "\u2022 **Central Norte Salta vs Racing De Cordoba** \u2794 1\n  \u21b3 \u2705 Backed by: `WinDrawWin + Vitibet + SoccerVista`\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa Zulubet: Not Listed\n",
+            "\u2022 **Godoy Cruz vs Los Andes** \u2794 1\n  \u21b3 \u2705 Backed by: `WinDrawWin + Vitibet + SoccerVista`\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa Zulubet: Not Listed\n"
         ],
-        "ai_optimized_message": "\ud83e\udd16 **TITAN ALGORITHMIC TICKETS** \ud83e\udd16\n\n\ud83d\udee1\ufe0f **Ticket 1: Premium Slip (50% of Daily Stake)**\n\u2022 Netherlands vs Serbia \u2794 1\n\u2022 Portugal vs Norway \u2794 1\n\u2022 Comunicaciones vs Flandria \u2794 1\n\ud83d\udd04 [RESERVE PICK]: Portugal vs Norway \u2794 Over 8.5 Corners (Avg: 9.0)\n\n\ud83d\udee1\ufe0f **Ticket 2: Premium Slip (50% of Daily Stake)**\n\u2022 San Martin S.J. vs Almagro \u2794 1\n\u2022 Greece vs Germany \u2794 Over 8.5 Corners (Avg: 9.0)\n\u2022 Netherlands vs Serbia \u2794 Over 8.5 Corners (Avg: 9.0)\n\ud83d\udd04 [RESERVE PICK]: Bahamas vs Virgin Islands \u2794 Over 8.5 Corners (Avg: 8.5)\n",
+        "ai_optimized_message": "\ud83e\udd16 **TITAN ALGORITHMIC TICKET (BOT B)** \ud83e\udd16\n\n\ud83d\udee1\ufe0f **Premium Slip (100% of Daily Stake)**\n\u2022 Netherlands vs Serbia \u2794 1\n\u2022 Portugal vs Norway \u2794 1\n\u2022 Bryne vs Lyn \u2794 1\n\ud83d\udd04 [RESERVE PICK]: Kosovo vs Austria \u2794 X\n",
         "tickets": [
+            {
+                "match": "Bryne vs Lyn",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Vvv Venlo vs Roda",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Sporting Gijon vs Celta De Vigo Ii",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Kosovo vs Austria",
+                "prediction": "X",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Malta vs Andorra",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Huracan vs Aldosivi",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "San Telmo vs Almirante Brown",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
             {
                 "match": "Netherlands vs Serbia",
                 "prediction": "1",
@@ -1091,6 +1151,72 @@
             },
             {
                 "match": "Portugal vs Norway",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Rep. Of Ireland vs Israel",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Girona vs Mallorca",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Castellon vs Ad Ceuta",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Cucuta vs Pereira",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Potenza vs Az Picerno",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "San Martin S.J. vs Almagro",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Chaco For Ever vs Defensores De Belgrano",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Javor vs Borac Cacak",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Comunicaciones vs Flandria",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Central Norte Salta vs Racing De Cordoba",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Godoy Cruz vs Los Andes",
                 "prediction": "1",
                 "status": "PENDING",
                 "score": "-"
