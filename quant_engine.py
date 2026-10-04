@@ -76,6 +76,16 @@ def get_dynamic_configs():
             "away_selector": "td", "home_class": "", "home_index": 1,
             "pick_selector": "td", "pick_class": "", "pick_index": 4,
             "use_scraperapi": True
+        },
+        "Golsinyali": {
+            "url": "https://www.golsinyali.com/en/predictions",
+            "fallback_url": None,
+            "use_scraperapi": False
+        },
+        "SoccerAiTips": {
+            "url": "https://www.socceraitips.com/api/daily-parlay",
+            "fallback_url": None,
+            "use_scraperapi": False
         }
     }
 
@@ -84,7 +94,9 @@ class ConsensusEngine:
         self.configs = configs
         self.master_matrix = {}
         self.corner_stats = {}
+        self.secondary_market_data = []
         self.diagnostics = {}
+        self.golsinyali_session = tls_requests.Session(impersonate="chrome124")
 
     def get_bot_a_exclusions(self):
         if not GIST_ID or not GIST_TOKEN:
@@ -160,7 +172,7 @@ class ConsensusEngine:
             for flag in status_flags:
                 if flag in padded_text:
                     return True
-        except Exception:
+        except:
             pass
         return False
 
@@ -174,11 +186,13 @@ class ConsensusEngine:
 
         raw_match_key = f"{self.clean_team_name(home)} vs {self.clean_team_name(away)}"
         final_key = raw_match_key
+        matched_existing_fixture = False
 
         for existing_key in self.master_matrix.keys():
             similarity = difflib.SequenceMatcher(None, raw_match_key.lower(), existing_key.lower()).ratio()
             if similarity >= 0.75:
                 final_key = existing_key
+                matched_existing_fixture = True
                 break
 
         if final_key not in self.master_matrix:
@@ -187,6 +201,132 @@ class ConsensusEngine:
         existing_sites = [entry[0] for entry in self.master_matrix[final_key]]
         if site_name not in existing_sites:
             self.master_matrix[final_key].append((site_name, normalized_pick))
+
+        return {
+            "match_key": final_key,
+            "matched_existing_fixture": matched_existing_fixture,
+            "normalized_pick": normalized_pick,
+        }
+
+    def fetch_golsinyali_sync(self):
+        try:
+            url = "https://www.golsinyali.com/en/predictions"
+            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0.0.0 Safari/537.36"}
+            r = self.golsinyali_session.get(url, headers=headers, timeout=25)
+            if r.status_code != 200:
+                self.diagnostics["Golsinyali"] = f"🔴 FAILED (HTTP {r.status_code})"
+                return
+
+            soup = BeautifulSoup(r.content, "html.parser")
+            candidates = []
+            for a in soup.find_all("a", href=True):
+                if "/en/match/" in a['href']:
+                    full_url = f"https://www.golsinyali.com{a['href']}"
+                    if full_url not in [c[0] for c in candidates]:
+                        candidates.append((full_url, a.get_text(" ", strip=True)))
+
+            candidates = candidates[:15]
+            valid_count, matched_count, new_count = 0, 0, 0
+            
+            for link, _ in candidates:
+                try:
+                    mr = self.golsinyali_session.get(link, headers=headers, timeout=15)
+                    msoup = BeautifulSoup(mr.content, "html.parser")
+                    scripts = msoup.find_all("script", type="application/ld+json")
+                    sports_event = None
+                    for s in scripts:
+                        if s.string and "SportsEvent" in s.string:
+                            try:
+                                data = json.loads(s.string)
+                                if isinstance(data, list):
+                                    sports_event = next((d for d in data if d.get("@type") == "SportsEvent"), None)
+                                elif isinstance(data, dict):
+                                    if data.get("@type") == "SportsEvent": sports_event = data
+                                    elif "@graph" in data:
+                                        sports_event = next((g for g in data["@graph"] if g.get("@type") == "SportsEvent"), None)
+                            except: pass
+                        if sports_event: break
+
+                    if sports_event:
+                        h_team = sports_event.get("homeTeam", {}).get("name")
+                        a_team = sports_event.get("awayTeam", {}).get("name")
+                        desc = str(sports_event.get("description", "")).lower()
+                        
+                        pick = None
+                        if "home win" in desc or "ms1" in desc or "pick:1" in desc.replace(" ",""): pick = "1"
+                        elif "away win" in desc or "ms2" in desc or "pick:2" in desc.replace(" ",""): pick = "2"
+                        elif "draw" in desc or "msx" in desc or "pick:x" in desc.replace(" ",""): pick = "X"
+                        
+                        if not pick and "balanced match" in desc:
+                            probs = re.search(r"\((\d+(?:\.\d+)?)%\s*-\s*(\d+(?:\.\d+)?)%\s*-\s*(\d+(?:\.\d+)?)%\)", desc)
+                            if probs:
+                                vals = {"1": float(probs.group(1)), "X": float(probs.group(2)), "2": float(probs.group(3))}
+                                pick = max(vals, key=vals.get)
+
+                        if h_team and a_team and pick:
+                            res = self.log_prediction_qa("Golsinyali", h_team, a_team, pick)
+                            if res:
+                                valid_count += 1
+                                if res["matched_existing_fixture"]: matched_count += 1
+                                else: new_count += 1
+                except:
+                    continue
+
+            if valid_count > 0:
+                self.diagnostics["Golsinyali"] = f"🟢 OK ({valid_count} Today | {matched_count} Matched | {new_count} New)"
+            else:
+                self.diagnostics["Golsinyali"] = "🟡 NO PREDICTIONS"
+        except Exception as e:
+            self.diagnostics["Golsinyali"] = f"🔴 FAILED ({type(e).__name__})"
+
+    def fetch_socceraitips_sync(self):
+        try:
+            url = "https://www.socceraitips.com/api/daily-parlay"
+            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0.0.0 Safari/537.36"}
+            r = requests.get(url, params={"locale": "en"}, headers=headers, timeout=25)
+            if r.status_code != 200:
+                self.diagnostics["SoccerAiTips"] = f"🔴 FAILED (HTTP {r.status_code})"
+                return
+            
+            payload = r.json()
+            matches = payload.get("data", {}).get("matches", [])
+            valid_count, matched_count = 0, 0
+
+            for match in matches:
+                try:
+                    home = match.get("home_team")
+                    away = match.get("away_team")
+                    bet_type = str(match.get("bet_type", "")).lower()
+                    pred_display = str(match.get("prediction_display", "")).upper()
+                    
+                    market, selection = None, None
+                    if bet_type == "over_2_5" and pred_display == "OVER 2.5":
+                        market, selection = "OVER_2.5", "OVER_2.5"
+                    elif bet_type in ["kg_var", "btts"] and pred_display == "BTTS":
+                        market, selection = "BTTS", "BTTS_YES"
+
+                    if market and home and away:
+                        raw_key = f"{self.clean_team_name(home)} vs {self.clean_team_name(away)}"
+                        best_key, matched = raw_key, False
+                        for ek in self.master_matrix.keys():
+                            if difflib.SequenceMatcher(None, raw_key.lower(), ek.lower()).ratio() > 0.75:
+                                best_key, matched = ek, True
+                                break
+                        
+                        self.secondary_market_data.append({
+                            "match": best_key, "market": market, "selection": selection
+                        })
+                        valid_count += 1
+                        if matched: matched_count += 1
+                except:
+                    continue
+
+            if valid_count > 0:
+                self.diagnostics["SoccerAiTips"] = f"🟢 OK ({valid_count} Secondary | {matched_count} Matched)"
+            else:
+                self.diagnostics["SoccerAiTips"] = "🟡 NO SECONDARY MARKETS"
+        except Exception as e:
+            self.diagnostics["SoccerAiTips"] = f"🔴 FAILED ({type(e).__name__})"
 
     def fetch_corners_sync(self):
         url = "https://www.totalcorner.com/match/today"
@@ -242,8 +382,10 @@ class ConsensusEngine:
                     if attempt == 1 and SCRAPER_API_KEY:
                         r = requests.get("http://api.scraperapi.com/", params={"api_key": SCRAPER_API_KEY, "url": active_url, "premium": "true", "country_code": "uk"}, timeout=req_timeout)
                     elif attempt == 2 and SCRAPER_API_KEY:
+                        active_url = "https://www.predictz.com/predictions/"
                         r = requests.get("http://api.scraperapi.com/", params={"api_key": SCRAPER_API_KEY, "url": active_url, "premium": "true", "country_code": "us", "antibot": "true"}, timeout=req_timeout)
                     elif attempt == 3:
+                        active_url = "https://www.predictz.com/predictions/"
                         r = tls_requests.get(active_url, impersonate="chrome124", timeout=req_timeout)
                     elif attempt == 4 and SCRAPER_API_KEY:
                         r = requests.get("http://api.scraperapi.com/", params={"api_key": SCRAPER_API_KEY, "url": active_url, "premium": "true"}, timeout=req_timeout)
@@ -275,7 +417,8 @@ class ConsensusEngine:
                     rows = []
                     
                     if site_name == "WinDrawWin":
-                        rows = soup.find_all("div", class_=re.compile(r"(wttr|wtrow|match-row|pr-match)", re.I))
+                        prefix = "pt" if "predictz" in active_url.lower() else "wt"
+                        rows = soup.find_all("div", class_=re.compile(rf"({prefix}tr|{prefix}row|match-row|pr-match)", re.I))
                         if not rows:
                             rows = soup.find_all("tr")
                     elif site_name in ["SoccerVista", "Zulubet"]:
@@ -307,9 +450,10 @@ class ConsensusEngine:
                             home, away, pick = None, None, None
 
                             if site_name == "WinDrawWin":
-                                h_elem = row.find(class_=re.compile(r'(wttmobh|team1|h$|home)', re.I))
-                                a_elem = row.find(class_=re.compile(r'(wttmoba|team2|a$|away)', re.I))
-                                p_elem = row.find(class_=re.compile(r'(wtoddsdesc|mobpred|prd|pred|pick|tip|prediction)', re.I))
+                                prefix = "pt" if "predictz" in active_url.lower() else "wt"
+                                h_elem = row.find(class_=re.compile(rf'({prefix}tmobh|team1|h$|home)', re.I))
+                                a_elem = row.find(class_=re.compile(rf'({prefix}tmoba|team2|a$|away)', re.I))
+                                p_elem = row.find(class_=re.compile(rf'({prefix}oddsdesc|mobpred|prd|pred|pick|tip|prediction)', re.I))
 
                                 if h_elem and a_elem:
                                     home, away = h_elem.text, a_elem.text
@@ -428,12 +572,18 @@ class ConsensusEngine:
         self.diagnostics[site_name] = f"🔴 FAILED (HTTP {last_status})"
 
     def process_consensus_signals(self):
-        agreed_matches = []
+        core_matches = []
+        fallback_matches = []
         structured_tickets = []
-        ai_input_data = []
+        core_data = []
+        fallback_data = []
 
-        all_scrapers = ["Statarea", "Vitibet", "Zulubet", "WinDrawWin", "SoccerVista"]
-        required_consensus = 3 
+        all_scrapers = [
+            "Statarea", "Vitibet", "Zulubet", "WinDrawWin", "SoccerVista", "Golsinyali"
+        ]
+        
+        required_consensus = 4 
+        fallback_consensus = 3
 
         for match, listings in self.master_matrix.items():
             prediction_weights = {}
@@ -442,11 +592,13 @@ class ConsensusEngine:
                 prediction_weights[pick] = prediction_weights.get(pick, 0) + 1
                 sites_backing.setdefault(pick, []).append(site)
 
-            if not prediction_weights: continue
+            if not prediction_weights:
+                continue
 
             top_pick = max(prediction_weights, key=prediction_weights.get)
+            top_count = prediction_weights[top_pick]
             
-            if prediction_weights[top_pick] >= required_consensus:
+            if top_count >= fallback_consensus:
                 backing_sites_list = sites_backing[top_pick]
                 backing_sites_str = " + ".join(backing_sites_list)
                 contradictions = []
@@ -460,37 +612,52 @@ class ConsensusEngine:
                         if pick != top_pick and left_out in sites:
                             other_pick = pick
                             break
-                    
                     if other_pick: 
                         match_text += f"  ↳ ⚠️ {left_out} backed: {other_pick}\n"
                         contradictions.append(f"{left_out} ({other_pick})")
                     else: 
                         match_text += f"  ↳ ⚪ {left_out}: Not Listed\n"
 
-                agreed_matches.append(match_text)
-                structured_tickets.append({"match": match, "prediction": top_pick, "status": "PENDING", "score": "-"})
-                
-                ai_input_data.append({
+                record = {
                     "match": match, 
                     "consensus_pick": top_pick, 
                     "agreement_count": len(backing_sites_list),
                     "contradictions": contradictions
-                })
+                }
 
-        return agreed_matches, structured_tickets, ai_input_data, required_consensus
+                if top_count >= required_consensus:
+                    core_matches.append(match_text)
+                    core_data.append(record)
+                    structured_tickets.append({"match": match, "prediction": top_pick, "status": "PENDING", "score": "-"})
+                else:
+                    fallback_matches.append(match_text)
+                    fallback_data.append(record)
 
-    def build_algorithmic_ticket(self, data, active_corner_teams):
-        self.diagnostics["QuantEngine"] = "🟢 Bot B Engine Generated"
+        fallback_active = len(core_data) < 6
+
+        return (
+            core_matches,
+            fallback_matches,
+            structured_tickets,
+            core_data,
+            fallback_data,
+            required_consensus,
+            fallback_consensus,
+            fallback_active,
+        )
+
+    def build_algorithmic_ticket(self, core_data, fallback_data, active_corner_teams):
+        self.diagnostics["QuantEngine"] = "🟢 Bot B 2-Ticket Engine Generated"
         
         # 1. READ FROM THE GIST TO GET BOT A'S EXCLUSIONS
         exclusions = self.get_bot_a_exclusions()
 
-        def get_score(match_data):
-            backing_count = match_data.get("agreement_count", 0)
-            contradiction_count = len(match_data.get("contradictions", []))
-            return (backing_count, -contradiction_count)
+        combined_data = core_data + fallback_data
 
-        sorted_matches = sorted(data, key=get_score, reverse=True)
+        def get_score(match_data):
+            return (match_data.get("agreement_count", 0), -len(match_data.get("contradictions", [])))
+
+        sorted_matches = sorted(combined_data, key=get_score, reverse=True)
         
         # 2. FILTER OUT BOT A'S PICKS
         main_candidates = [m for m in sorted_matches if m['consensus_pick'] in ["1", "2"] and not self.is_excluded(m['match'], exclusions)]
@@ -502,49 +669,68 @@ class ConsensusEngine:
             pick_str = f"{m['match']} ➔ {m['consensus_pick']}"
             if pick_str not in final_main_picks:
                 final_main_picks.append(pick_str)
-            if len(final_main_picks) == 3: break
+            if len(final_main_picks) == 6:
+                break
                 
-        if len(final_main_picks) < 3:
+        if len(final_main_picks) < 6:
             for corner in filtered_corners:
                 corner_pick = f"{corner['match']} ➔ Over 8.5 Corners (Avg: {corner['avg_corners']})"
                 if corner_pick not in final_main_picks:
                     final_main_picks.append(corner_pick)
-                if len(final_main_picks) == 3: break
+                if len(final_main_picks) == 6:
+                    break
         
         reserve_picks = []
         for d in draw_candidates:
             pick_str = f"{d['match']} ➔ {d['consensus_pick']}"
             if pick_str not in reserve_picks and pick_str not in final_main_picks:
                 reserve_picks.append(pick_str)
-            if len(reserve_picks) == 1: break
+            if len(reserve_picks) == 2:
+                break
                 
-        if len(reserve_picks) < 1:
+        if len(reserve_picks) < 2:
             leftovers = [f"{m['match']} ➔ {m['consensus_pick']}" for m in main_candidates]
             for pick_str in leftovers:
                 if pick_str not in final_main_picks and pick_str not in reserve_picks:
                     reserve_picks.append(pick_str)
-                if len(reserve_picks) == 1: break
+                if len(reserve_picks) == 2:
+                    break
                     
-        if len(reserve_picks) < 1:
+        if len(reserve_picks) < 2:
             for corner in filtered_corners:
                 corner_pick = f"{corner['match']} ➔ Over 8.5 Corners (Avg: {corner['avg_corners']})"
                 if corner_pick not in final_main_picks and corner_pick not in reserve_picks:
                     reserve_picks.append(corner_pick)
-                if len(reserve_picks) == 1: break
+                if len(reserve_picks) == 2:
+                    break
 
         if len(final_main_picks) < 3:
             return "No unique high-conviction matches found for Bot B today."
             
+        ticket1_mains = final_main_picks[:3]
+        ticket2_mains = final_main_picks[3:6]
+        
+        if len(ticket2_mains) < 3 and len(ticket2_mains) > 0:
+            for corner in filtered_corners:
+                corner_pick = f"{corner['match']} ➔ Over 8.5 Corners (Avg: {corner['avg_corners']})"
+                if corner_pick not in ticket1_mains and corner_pick not in ticket2_mains:
+                    ticket2_mains.append(corner_pick)
+                if len(ticket2_mains) == 3:
+                    break
+
         reserve1 = reserve_picks[0] if len(reserve_picks) > 0 else None
+        reserve2 = reserve_picks[1] if len(reserve_picks) > 1 else None
         
-        ticket_text = "🤖 **TITAN ALGORITHMIC TICKET (BOT B)** 🤖\n\n"
-        ticket_text += "🛡️ **Premium Slip (100% of Daily Stake)**\n"
+        ticket_text = "🤖 **TITAN ALGORITHMIC TICKETS (BOT B)** 🤖\n\n"
         
-        for pick in final_main_picks: 
-            ticket_text += f"• {pick}\n"
+        ticket_text += "🛡️ **Ticket 1: Premium Slip (50% of Daily Stake)**\n"
+        for pick in ticket1_mains: ticket_text += f"• {pick}\n"
+        if reserve1: ticket_text += f"🔄 [RESERVE PICK]: {reserve1}\n"
             
-        if reserve1: 
-            ticket_text += f"🔄 [RESERVE PICK]: {reserve1}\n"
+        if len(ticket2_mains) >= 2:
+            ticket_text += "\n🛡️ **Ticket 2: Premium Slip (50% of Daily Stake)**\n"
+            for pick in ticket2_mains: ticket_text += f"• {pick}\n"
+            if reserve2: ticket_text += f"🔄 [RESERVE PICK]: {reserve2}\n"
                 
         return ticket_text
 
@@ -653,84 +839,122 @@ class ConsensusEngine:
     async def run_pipeline(self):
         eat_time = datetime.datetime.utcnow() + datetime.timedelta(hours=3)
         today_date = eat_time.strftime('%Y-%m-%d')
+        current_hour = eat_time.hour
 
         memory = self.load_memory()
         today_payload = memory.get(today_date)
 
-        if today_payload and today_payload.get("locked") and not FORCE_RUN:
-            print(f"🔒 Engine already ran for {today_date}. Bypassing scrapers.")
-            settled_reports = self.settle_pending_tickets(memory)
-            if settled_reports:
-                msg = "📊 **MATCH SETTLEMENT UPDATE (BOT B)** 📊\n\n"
-                for rep in settled_reports: msg += f"{rep}\n"
-                self.send_telegram_alert(msg)
-            return
+        is_already_locked = False
+        if isinstance(today_payload, dict) and not FORCE_RUN:
+            if today_payload.get("locked"):
+                is_already_locked = True
 
         if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID: self.diagnostics["Telegram"] = "🟡 NOT CONFIGURED"
         else: self.diagnostics["Telegram"] = "🟢 CONFIGURED"
 
-        print(f"🔓 Scraping and generating fresh Algorithmic Ticket for Bot B ({today_date})...")
-        self.check_scraperapi_balance()
-        
-        loop = asyncio.get_running_loop()
-        with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:
-            base_tasks = [
-                loop.run_in_executor(pool, self.fetch_and_scrape_sync, n, c)
-                for n, c in self.configs.items()
-            ]
-            base_tasks.append(loop.run_in_executor(pool, self.fetch_corners_sync))
-            await asyncio.gather(*base_tasks)
+        if is_already_locked:
+            print(f"🔒 Data for {today_date} is securely locked. Bypassing scrapers.")
+            daily_data = memory[today_date]
+            agreed_matches = daily_data.get("core_matches_4plus") or daily_data.get("agreed_matches", [])
+            algorithmic_message = daily_data.get("ai_optimized_message")
+            self.diagnostics["DailyLock"] = f"🟢 CACHED (Tokens Saved for {today_date})"
+        else:
+            print(f"🔓 Scraping and generating fresh Algorithmic Tickets for Bot B ({today_date})...")
+            
+            self.check_scraperapi_balance()
 
-        agreed_matches, structured_tickets, ai_input_data, req_threshold = self.process_consensus_signals()
+            loop = asyncio.get_running_loop()
+            with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:
+                base_tasks = [
+                    loop.run_in_executor(pool, self.fetch_and_scrape_sync, n, c)
+                    for n, c in self.configs.items()
+                    if n not in {"Golsinyali", "SoccerAiTips"}
+                ]
+                base_tasks.append(loop.run_in_executor(pool, self.fetch_corners_sync))
+                
+                if "Golsinyali" in self.configs:
+                    base_tasks.append(loop.run_in_executor(pool, self.fetch_golsinyali_sync))
+                if "SoccerAiTips" in self.configs:
+                    base_tasks.append(loop.run_in_executor(pool, self.fetch_socceraitips_sync))
+                
+                await asyncio.gather(*base_tasks)
 
-        active_corner_teams = []
-        for match in self.master_matrix.keys():
-            parts = match.split(" vs ")
-            if len(parts) == 2:
-                h, a = parts[0].strip(), parts[1].strip()
-                if h in self.corner_stats and self.corner_stats[h] >= 9.5:
-                    active_corner_teams.append({"match": match, "team": h, "avg_corners": self.corner_stats[h]})
-                if a in self.corner_stats and self.corner_stats[a] >= 9.5:
-                    active_corner_teams.append({"match": match, "team": a, "avg_corners": self.corner_stats[a]})
+            (
+                core_matches,
+                fallback_matches,
+                structured_tickets,
+                core_ai_input_data,
+                fallback_ai_input_data,
+                req_threshold,
+                fallback_threshold,
+                fallback_active,
+            ) = self.process_consensus_signals()
 
-        algorithmic_message = None
-        if ai_input_data or active_corner_teams:
-            algorithmic_message = self.build_algorithmic_ticket(ai_input_data, active_corner_teams)
+            agreed_matches = core_matches if core_matches else fallback_matches
 
-        memory[today_date] = {
-            "locked": True,
-            "agreed_matches": agreed_matches,
-            "ai_optimized_message": algorithmic_message,
-            "tickets": structured_tickets
-        }
-        
-        self.save_memory(memory)
+            active_corner_teams = []
+            for match in self.master_matrix.keys():
+                parts = match.split(" vs ")
+                if len(parts) == 2:
+                    h, a = parts[0].strip(), parts[1].strip()
+                    if h in self.corner_stats and self.corner_stats[h] >= 8.5:
+                        active_corner_teams.append({"match": match, "team": h, "avg_corners": self.corner_stats[h]})
+                    if a in self.corner_stats and self.corner_stats[a] >= 8.5:
+                        active_corner_teams.append({"match": match, "team": a, "avg_corners": self.corner_stats[a]})
+
+            algorithmic_message = None
+            if core_ai_input_data or fallback_ai_input_data or active_corner_teams:
+                algorithmic_message = self.build_algorithmic_ticket(core_ai_input_data, fallback_ai_input_data, active_corner_teams)
+
+            should_lock = (current_hour >= 5) and (algorithmic_message is not None or not (core_ai_input_data or fallback_ai_input_data))
+
+            memory[today_date] = {
+                "locked": should_lock,
+                "agreed_matches": agreed_matches,
+                "ai_optimized_message": algorithmic_message,
+                "tickets": structured_tickets
+            }
+            
+            if not FORCE_RUN: self.save_memory(memory)
+            
+            if should_lock: self.diagnostics["DailyLock"] = f"🟢 LOCKED NEW DATA FOR {today_date}"
+            else: self.diagnostics["DailyLock"] = f"⏳ PREVIEW (Will Lock At 05:00 EAT)"
 
         settled_reports = self.settle_pending_tickets(memory)
 
-        msg = "🤝 **RAW CONSENSUS DATA (3+ SITES AGREEMENT)** 🤝\n\n"
-        if agreed_matches:
-            for match in agreed_matches:
-                msg += f"{match}\n"
-        else:
-            msg += "No matches found with required agreement today.\n\n"
+        if not is_already_locked or settled_reports:
+            msg = ""
+            if "fallback_active" in locals() and fallback_active:
+                msg += "🤝 **RAW CONSENSUS DATA (3+ SITES AGREEMENT)** 🤝\n\n"
+            else:
+                msg += "🤝 **RAW CONSENSUS DATA (4+ SITES AGREEMENT)** 🤝\n\n"
 
-        if settled_reports:
-            msg += "📊 **SETTLED RESULTS (BOT B)** 📊\n\n"
-            for rep in settled_reports: msg += f"{rep}\n"
-            msg += "\n"
+            if agreed_matches:
+                for match in agreed_matches:
+                    msg += f"{match}\n"
+            else:
+                msg += "No matches found with required agreement today.\n\n"
 
-        msg += "⚙️ **SCRAPER STATUS** ⚙️\n"
-        essential_keys = ["Telegram", "ScraperAPICredits", "Statarea", "Vitibet", "Zulubet", "WinDrawWin", "SoccerVista", "CornersEngine", "QuantEngine", "GistSync"]
-        for k in essential_keys:
-            if k in self.diagnostics:
-                msg += f"↳ {k}: {self.diagnostics[k]}\n"
-        
-        self.send_telegram_alert(msg)
+            if settled_reports:
+                msg += "📊 **SETTLED RESULTS (BOT B)** 📊\n\n"
+                for rep in settled_reports: msg += f"{rep}\n"
+                msg += "\n"
 
-        if algorithmic_message:
-            time.sleep(1.5)
-            self.send_telegram_alert(algorithmic_message)
+            msg += "⚙️ **SCRAPER STATUS** ⚙️\n"
+            essential_keys = [
+                "Telegram", "ScraperAPICredits", "Statarea", "Vitibet", 
+                "Zulubet", "WinDrawWin", "SoccerVista", "Golsinyali", 
+                "SoccerAiTips", "CornersEngine", "QuantEngine", "GistSync", "DailyLock"
+            ]
+            for k in essential_keys:
+                if k in self.diagnostics:
+                    msg += f"↳ {k}: {self.diagnostics[k]}\n"
+            
+            self.send_telegram_alert(msg)
+
+            if algorithmic_message and not is_already_locked:
+                time.sleep(1.5)
+                self.send_telegram_alert(algorithmic_message)
 
 if __name__ == "__main__":
     live_configs = get_dynamic_configs()
