@@ -1222,5 +1222,27 @@
                 "score": "-"
             }
         ]
+    },
+    "2026-10-05": {
+        "locked": true,
+        "agreed_matches": [
+            "\u2022 **Italy vs Turkey** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + WinDrawWin + Vitibet + SoccerVista`\n  \u21b3 \u26aa Zulubet: Not Listed\n  \u21b3 \u26aa Golsinyali: Not Listed\n",
+            "\u2022 **Northern Ireland vs Georgia** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + WinDrawWin + Vitibet + SoccerVista`\n  \u21b3 \u26aa Zulubet: Not Listed\n  \u21b3 \u26aa Golsinyali: Not Listed\n"
+        ],
+        "ai_optimized_message": "\ud83e\udd16 **TITAN ALGORITHMIC TICKETS (BOT B)** \ud83e\udd16\n\n\ud83d\udee1\ufe0f **Ticket 1: Premium Slip (50% of Daily Stake)**\n\u2022 Cyprus vs Latvia \u2794 1\n\u2022 Montenegro vs Armenia \u2794 1\n\u2022 Backa Topola vs Graficar Beograd \u2794 1\n\ud83d\udd04 [RESERVE PICK]: Guadeloupe vs St. Lucia \u2794 Over 8.5 Corners (Avg: 8.5)\n\n\ud83d\udee1\ufe0f **Ticket 2: Premium Slip (50% of Daily Stake)**\n\u2022 Fsk Mariupol vs Nyva Ternopil \u2794 1\n\u2022 France vs Belgium \u2794 1\n\u2022 Malaysia vs Vietnam \u2794 Over 8.5 Corners (Avg: 8.5)\n\ud83d\udd04 [RESERVE PICK]: France vs Belgium \u2794 Over 8.5 Corners (Avg: 9.0)\n",
+        "tickets": [
+            {
+                "match": "Italy vs Turkey",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Northern Ireland vs Georgia",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            }
+        ]
     }
 }
