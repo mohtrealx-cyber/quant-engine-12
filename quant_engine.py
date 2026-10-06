@@ -60,7 +60,7 @@ def get_dynamic_configs():
         "Golsinyali": {
             "url": "https://www.golsinyali.com/en/predictions",
             "fallback_url": None,
-            "use_scraperapi": False
+            "use_scraperapi": True
         },
         "SoccerAiTips": {
             "url": "https://www.socceraitips.com/api/daily-parlay",
@@ -185,6 +185,11 @@ class ConsensusEngine:
             url = "https://www.golsinyali.com/en/predictions"
             headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0.0.0 Safari/537.36"}
             r = self.golsinyali_session.get(url, headers=headers, timeout=25)
+            
+            # ScraperAPI Fallback if Cloudflare blocks TLS Spoofing
+            if (r.status_code != 200 or "just a moment" in r.text.lower()) and SCRAPER_API_KEY:
+                r = requests.get("http://api.scraperapi.com/", params={"api_key": SCRAPER_API_KEY, "url": url, "premium": "true", "render": "true"}, timeout=45)
+
             if r.status_code != 200:
                 self.diagnostics["Golsinyali"] = f"🔴 FAILED (HTTP {r.status_code})"
                 return
@@ -193,7 +198,9 @@ class ConsensusEngine:
             candidates = []
             for a in soup.find_all("a", href=True):
                 if "/en/match/" in a['href']:
-                    full_url = f"https://www.golsinyali.com{a['href']}"
+                    full_url = a['href']
+                    if not full_url.startswith("http"):
+                        full_url = f"https://www.golsinyali.com{full_url}"
                     if full_url not in [c[0] for c in candidates]:
                         candidates.append((full_url, a.get_text(" ", strip=True)))
 
@@ -622,7 +629,7 @@ class ConsensusEngine:
             fallback_active,
         )
 
-    def build_algorithmic_ticket(self, core_data, fallback_data, active_corner_teams):
+    def build_algorithmic_ticket(self, core_data, fallback_data):
         self.diagnostics["QuantEngine"] = "🟢 Bot B 2-Ticket Engine Generated"
         
         # 1. READ FROM THE GIST TO GET BOT A'S EXCLUSIONS
@@ -638,13 +645,7 @@ class ConsensusEngine:
         # 2. FILTER OUT BOT A'S PICKS
         main_candidates = [m for m in sorted_matches if m['consensus_pick'] in ["1", "2"] and not self.is_excluded(m['match'], exclusions)]
         draw_candidates = [m for m in sorted_matches if m['consensus_pick'] == "X" and not self.is_excluded(m['match'], exclusions)]
-        filtered_corners = [c for c in active_corner_teams if not self.is_excluded(c['match'], exclusions)]
         
-        # STRICT RULE: A ticket must have at least 1 actual match. Corners cannot build a ticket from scratch.
-        if len(main_candidates) + len(draw_candidates) < 1:
-            self.diagnostics["QuantEngine"] = "🟡 Insufficient Matches"
-            return "No unique high-conviction matches found for Bot B today."
-
         final_main_picks = []
         for m in main_candidates:
             pick_str = f"{m['match']} ➔ {m['consensus_pick']}"
@@ -652,15 +653,6 @@ class ConsensusEngine:
                 final_main_picks.append(pick_str)
             if len(final_main_picks) == 6:
                 break
-                
-        # Only use corners as filler if we already have some actual matches
-        if len(final_main_picks) > 0 and len(final_main_picks) < 6:
-            for corner in filtered_corners:
-                corner_pick = f"{corner['match']} ➔ Over 8.5 Corners (Avg: {corner['avg_corners']})"
-                if corner_pick not in final_main_picks:
-                    final_main_picks.append(corner_pick)
-                if len(final_main_picks) == 6:
-                    break
         
         reserve_picks = []
         for d in draw_candidates:
@@ -677,29 +669,14 @@ class ConsensusEngine:
                     reserve_picks.append(pick_str)
                 if len(reserve_picks) == 2:
                     break
-                    
-        if len(reserve_picks) < 2:
-            for corner in filtered_corners:
-                corner_pick = f"{corner['match']} ➔ Over 8.5 Corners (Avg: {corner['avg_corners']})"
-                if corner_pick not in final_main_picks and corner_pick not in reserve_picks:
-                    reserve_picks.append(corner_pick)
-                if len(reserve_picks) == 2:
-                    break
 
+        # STRICT RULE: Must have at least 3 ACTUAL matches. No corners allowed.
         if len(final_main_picks) < 3:
             self.diagnostics["QuantEngine"] = "🟡 Insufficient Matches"
             return "No unique high-conviction matches found for Bot B today."
             
         ticket1_mains = final_main_picks[:3]
         ticket2_mains = final_main_picks[3:6]
-        
-        if len(ticket2_mains) < 3 and len(ticket2_mains) > 0:
-            for corner in filtered_corners:
-                corner_pick = f"{corner['match']} ➔ Over 8.5 Corners (Avg: {corner['avg_corners']})"
-                if corner_pick not in ticket1_mains and corner_pick not in ticket2_mains:
-                    ticket2_mains.append(corner_pick)
-                if len(ticket2_mains) == 3:
-                    break
 
         reserve1 = reserve_picks[0] if len(reserve_picks) > 0 else None
         reserve2 = reserve_picks[1] if len(reserve_picks) > 1 else None
@@ -710,7 +687,8 @@ class ConsensusEngine:
         for pick in ticket1_mains: ticket_text += f"• {pick}\n"
         if reserve1: ticket_text += f"🔄 [RESERVE PICK]: {reserve1}\n"
             
-        if len(ticket2_mains) >= 2:
+        # ONLY display Ticket 2 if it actually gathered 3 full match predictions.
+        if len(ticket2_mains) == 3:
             ticket_text += "\n🛡️ **Ticket 2: Premium Slip (50% of Daily Stake)**\n"
             for pick in ticket2_mains: ticket_text += f"• {pick}\n"
             if reserve2: ticket_text += f"🔄 [RESERVE PICK]: {reserve2}\n"
@@ -875,19 +853,9 @@ class ConsensusEngine:
 
             agreed_matches = core_matches if core_matches else fallback_matches
 
-            active_corner_teams = []
-            for match in self.master_matrix.keys():
-                parts = match.split(" vs ")
-                if len(parts) == 2:
-                    h, a = parts[0].strip(), parts[1].strip()
-                    if h in self.corner_stats and self.corner_stats[h] >= 8.5:
-                        active_corner_teams.append({"match": match, "team": h, "avg_corners": self.corner_stats[h]})
-                    if a in self.corner_stats and self.corner_stats[a] >= 8.5:
-                        active_corner_teams.append({"match": match, "team": a, "avg_corners": self.corner_stats[a]})
-
             algorithmic_message = None
-            if core_ai_input_data or fallback_ai_input_data or active_corner_teams:
-                algorithmic_message = self.build_algorithmic_ticket(core_ai_input_data, fallback_ai_input_data, active_corner_teams)
+            if core_ai_input_data or fallback_ai_input_data:
+                algorithmic_message = self.build_algorithmic_ticket(core_ai_input_data, fallback_ai_input_data)
 
             should_lock = (current_hour >= 5) and (algorithmic_message is not None or not (core_ai_input_data or fallback_ai_input_data))
 
