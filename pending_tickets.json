@@ -1244,5 +1244,34 @@
                 "score": "-"
             }
         ]
+    },
+    "2026-10-06": {
+        "locked": true,
+        "agreed_matches": [
+            "\u2022 **Albania vs San Marino** \u2794 1\n  \u21b3 \u2705 Backed by: `Zulubet + WinDrawWin + Vitibet + SoccerVista`\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa Golsinyali: Not Listed\n",
+            "\u2022 **England vs Czech Republic** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + WinDrawWin + Vitibet + SoccerVista`\n  \u21b3 \u26aa Zulubet: Not Listed\n  \u21b3 \u26aa Golsinyali: Not Listed\n",
+            "\u2022 **Angola vs Malawi** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + WinDrawWin + Vitibet + SoccerVista`\n  \u21b3 \u26aa Zulubet: Not Listed\n  \u21b3 \u26aa Golsinyali: Not Listed\n"
+        ],
+        "ai_optimized_message": "\ud83e\udd16 **TITAN ALGORITHMIC TICKETS (BOT B)** \ud83e\udd16\n\n\ud83d\udee1\ufe0f **Ticket 1: Premium Slip (50% of Daily Stake)**\n\u2022 Switzerland vs North Macedonia \u2794 1\n\u2022 Changchun Yatai vs Yanbian Longding \u2794 1\n\u2022 Nantong Zhiyun vs Ningbo Professional \u2794 1\n\n\ud83d\udee1\ufe0f **Ticket 2: Premium Slip (50% of Daily Stake)**\n\u2022 Luxembourg vs Bulgaria \u2794 1\n\u2022 Croatia vs Spain \u2794 2\n",
+        "tickets": [
+            {
+                "match": "Albania vs San Marino",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "England vs Czech Republic",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Angola vs Malawi",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            }
+        ]
     }
 }
