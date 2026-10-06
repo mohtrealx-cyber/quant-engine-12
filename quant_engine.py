@@ -9,6 +9,7 @@ import requests
 from bs4 import BeautifulSoup
 import concurrent.futures
 from curl_cffi import requests as tls_requests
+import google.generativeai as genai
 
 # ==============================================================================
 # CONFIGURATION & SECURE ROUTING
@@ -20,6 +21,11 @@ SCRAPER_API_KEY = (os.environ.get("SCRAPER_API_KEY") or "").strip()
 # GIST CREDENTIALS FOR BOT-TO-BOT SYNC
 GIST_ID = os.environ.get("GIST_ID")
 GIST_TOKEN = os.environ.get("GIST_TOKEN")
+
+# GEMINI AI SETUP
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
 
 # Reads the 'Force Run' checkbox from GitHub Actions to break the daily lock
 FORCE_RUN = os.environ.get("FORCE_RUN", "false").lower() == "true"
@@ -76,16 +82,6 @@ def get_dynamic_configs():
             "away_selector": "td", "home_class": "", "home_index": 1,
             "pick_selector": "td", "pick_class": "", "pick_index": 4,
             "use_scraperapi": True
-        },
-        "Golsinyali": {
-            "url": "https://www.golsinyali.com/en/predictions",
-            "fallback_url": None,
-            "use_scraperapi": False
-        },
-        "SoccerAiTips": {
-            "url": "https://www.socceraitips.com/api/daily-parlay",
-            "fallback_url": None,
-            "use_scraperapi": False
         }
     }
 
@@ -94,9 +90,7 @@ class ConsensusEngine:
         self.configs = configs
         self.master_matrix = {}
         self.corner_stats = {}
-        self.secondary_market_data = []
         self.diagnostics = {}
-        self.golsinyali_session = tls_requests.Session(impersonate="chrome124")
 
     def get_bot_a_exclusions(self):
         if not GIST_ID or not GIST_TOKEN:
@@ -172,7 +166,7 @@ class ConsensusEngine:
             for flag in status_flags:
                 if flag in padded_text:
                     return True
-        except:
+        except Exception:
             pass
         return False
 
@@ -186,13 +180,11 @@ class ConsensusEngine:
 
         raw_match_key = f"{self.clean_team_name(home)} vs {self.clean_team_name(away)}"
         final_key = raw_match_key
-        matched_existing_fixture = False
 
         for existing_key in self.master_matrix.keys():
             similarity = difflib.SequenceMatcher(None, raw_match_key.lower(), existing_key.lower()).ratio()
             if similarity >= 0.75:
                 final_key = existing_key
-                matched_existing_fixture = True
                 break
 
         if final_key not in self.master_matrix:
@@ -201,132 +193,6 @@ class ConsensusEngine:
         existing_sites = [entry[0] for entry in self.master_matrix[final_key]]
         if site_name not in existing_sites:
             self.master_matrix[final_key].append((site_name, normalized_pick))
-
-        return {
-            "match_key": final_key,
-            "matched_existing_fixture": matched_existing_fixture,
-            "normalized_pick": normalized_pick,
-        }
-
-    def fetch_golsinyali_sync(self):
-        try:
-            url = "https://www.golsinyali.com/en/predictions"
-            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0.0.0 Safari/537.36"}
-            r = self.golsinyali_session.get(url, headers=headers, timeout=25)
-            if r.status_code != 200:
-                self.diagnostics["Golsinyali"] = f"🔴 FAILED (HTTP {r.status_code})"
-                return
-
-            soup = BeautifulSoup(r.content, "html.parser")
-            candidates = []
-            for a in soup.find_all("a", href=True):
-                if "/en/match/" in a['href']:
-                    full_url = f"https://www.golsinyali.com{a['href']}"
-                    if full_url not in [c[0] for c in candidates]:
-                        candidates.append((full_url, a.get_text(" ", strip=True)))
-
-            candidates = candidates[:15]
-            valid_count, matched_count, new_count = 0, 0, 0
-            
-            for link, _ in candidates:
-                try:
-                    mr = self.golsinyali_session.get(link, headers=headers, timeout=15)
-                    msoup = BeautifulSoup(mr.content, "html.parser")
-                    scripts = msoup.find_all("script", type="application/ld+json")
-                    sports_event = None
-                    for s in scripts:
-                        if s.string and "SportsEvent" in s.string:
-                            try:
-                                data = json.loads(s.string)
-                                if isinstance(data, list):
-                                    sports_event = next((d for d in data if d.get("@type") == "SportsEvent"), None)
-                                elif isinstance(data, dict):
-                                    if data.get("@type") == "SportsEvent": sports_event = data
-                                    elif "@graph" in data:
-                                        sports_event = next((g for g in data["@graph"] if g.get("@type") == "SportsEvent"), None)
-                            except: pass
-                        if sports_event: break
-
-                    if sports_event:
-                        h_team = sports_event.get("homeTeam", {}).get("name")
-                        a_team = sports_event.get("awayTeam", {}).get("name")
-                        desc = str(sports_event.get("description", "")).lower()
-                        
-                        pick = None
-                        if "home win" in desc or "ms1" in desc or "pick:1" in desc.replace(" ",""): pick = "1"
-                        elif "away win" in desc or "ms2" in desc or "pick:2" in desc.replace(" ",""): pick = "2"
-                        elif "draw" in desc or "msx" in desc or "pick:x" in desc.replace(" ",""): pick = "X"
-                        
-                        if not pick and "balanced match" in desc:
-                            probs = re.search(r"\((\d+(?:\.\d+)?)%\s*-\s*(\d+(?:\.\d+)?)%\s*-\s*(\d+(?:\.\d+)?)%\)", desc)
-                            if probs:
-                                vals = {"1": float(probs.group(1)), "X": float(probs.group(2)), "2": float(probs.group(3))}
-                                pick = max(vals, key=vals.get)
-
-                        if h_team and a_team and pick:
-                            res = self.log_prediction_qa("Golsinyali", h_team, a_team, pick)
-                            if res:
-                                valid_count += 1
-                                if res["matched_existing_fixture"]: matched_count += 1
-                                else: new_count += 1
-                except:
-                    continue
-
-            if valid_count > 0:
-                self.diagnostics["Golsinyali"] = f"🟢 OK ({valid_count} Today | {matched_count} Matched | {new_count} New)"
-            else:
-                self.diagnostics["Golsinyali"] = "🟡 NO PREDICTIONS"
-        except Exception as e:
-            self.diagnostics["Golsinyali"] = f"🔴 FAILED ({type(e).__name__})"
-
-    def fetch_socceraitips_sync(self):
-        try:
-            url = "https://www.socceraitips.com/api/daily-parlay"
-            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0.0.0 Safari/537.36"}
-            r = requests.get(url, params={"locale": "en"}, headers=headers, timeout=25)
-            if r.status_code != 200:
-                self.diagnostics["SoccerAiTips"] = f"🔴 FAILED (HTTP {r.status_code})"
-                return
-            
-            payload = r.json()
-            matches = payload.get("data", {}).get("matches", [])
-            valid_count, matched_count = 0, 0
-
-            for match in matches:
-                try:
-                    home = match.get("home_team")
-                    away = match.get("away_team")
-                    bet_type = str(match.get("bet_type", "")).lower()
-                    pred_display = str(match.get("prediction_display", "")).upper()
-                    
-                    market, selection = None, None
-                    if bet_type == "over_2_5" and pred_display == "OVER 2.5":
-                        market, selection = "OVER_2.5", "OVER_2.5"
-                    elif bet_type in ["kg_var", "btts"] and pred_display == "BTTS":
-                        market, selection = "BTTS", "BTTS_YES"
-
-                    if market and home and away:
-                        raw_key = f"{self.clean_team_name(home)} vs {self.clean_team_name(away)}"
-                        best_key, matched = raw_key, False
-                        for ek in self.master_matrix.keys():
-                            if difflib.SequenceMatcher(None, raw_key.lower(), ek.lower()).ratio() > 0.75:
-                                best_key, matched = ek, True
-                                break
-                        
-                        self.secondary_market_data.append({
-                            "match": best_key, "market": market, "selection": selection
-                        })
-                        valid_count += 1
-                        if matched: matched_count += 1
-                except:
-                    continue
-
-            if valid_count > 0:
-                self.diagnostics["SoccerAiTips"] = f"🟢 OK ({valid_count} Secondary | {matched_count} Matched)"
-            else:
-                self.diagnostics["SoccerAiTips"] = "🟡 NO SECONDARY MARKETS"
-        except Exception as e:
-            self.diagnostics["SoccerAiTips"] = f"🔴 FAILED ({type(e).__name__})"
 
     def fetch_corners_sync(self):
         url = "https://www.totalcorner.com/match/today"
@@ -572,18 +438,12 @@ class ConsensusEngine:
         self.diagnostics[site_name] = f"🔴 FAILED (HTTP {last_status})"
 
     def process_consensus_signals(self):
-        core_matches = []
-        fallback_matches = []
+        agreed_matches = []
         structured_tickets = []
-        core_data = []
-        fallback_data = []
+        ai_input_data = []
 
-        all_scrapers = [
-            "Statarea", "Vitibet", "Zulubet", "WinDrawWin", "SoccerVista", "Golsinyali"
-        ]
-        
-        required_consensus = 4 
-        fallback_consensus = 3
+        all_scrapers = ["Statarea", "Vitibet", "Zulubet", "WinDrawWin", "SoccerVista"]
+        required_consensus = 3 
 
         for match, listings in self.master_matrix.items():
             prediction_weights = {}
@@ -592,13 +452,11 @@ class ConsensusEngine:
                 prediction_weights[pick] = prediction_weights.get(pick, 0) + 1
                 sites_backing.setdefault(pick, []).append(site)
 
-            if not prediction_weights:
-                continue
+            if not prediction_weights: continue
 
             top_pick = max(prediction_weights, key=prediction_weights.get)
-            top_count = prediction_weights[top_pick]
             
-            if top_count >= fallback_consensus:
+            if prediction_weights[top_pick] >= required_consensus:
                 backing_sites_list = sites_backing[top_pick]
                 backing_sites_str = " + ".join(backing_sites_list)
                 contradictions = []
@@ -612,52 +470,35 @@ class ConsensusEngine:
                         if pick != top_pick and left_out in sites:
                             other_pick = pick
                             break
+                    
                     if other_pick: 
                         match_text += f"  ↳ ⚠️ {left_out} backed: {other_pick}\n"
                         contradictions.append(f"{left_out} ({other_pick})")
                     else: 
                         match_text += f"  ↳ ⚪ {left_out}: Not Listed\n"
 
-                record = {
+                agreed_matches.append(match_text)
+                structured_tickets.append({"match": match, "prediction": top_pick, "status": "PENDING", "score": "-"})
+                
+                ai_input_data.append({
                     "match": match, 
                     "consensus_pick": top_pick, 
                     "agreement_count": len(backing_sites_list),
                     "contradictions": contradictions
-                }
+                })
 
-                if top_count >= required_consensus:
-                    core_matches.append(match_text)
-                    core_data.append(record)
-                    structured_tickets.append({"match": match, "prediction": top_pick, "status": "PENDING", "score": "-"})
-                else:
-                    fallback_matches.append(match_text)
-                    fallback_data.append(record)
+        return agreed_matches, structured_tickets, ai_input_data, required_consensus
 
-        fallback_active = len(core_data) < 6
-
-        return (
-            core_matches,
-            fallback_matches,
-            structured_tickets,
-            core_data,
-            fallback_data,
-            required_consensus,
-            fallback_consensus,
-            fallback_active,
-        )
-
-    def build_algorithmic_ticket(self, core_data, fallback_data, active_corner_teams):
-        self.diagnostics["QuantEngine"] = "🟢 Bot B 2-Ticket Engine Generated"
-        
+    def build_algorithmic_ticket(self, data, active_corner_teams):
         # 1. READ FROM THE GIST TO GET BOT A'S EXCLUSIONS
         exclusions = self.get_bot_a_exclusions()
 
-        combined_data = core_data + fallback_data
-
         def get_score(match_data):
-            return (match_data.get("agreement_count", 0), -len(match_data.get("contradictions", [])))
+            backing_count = match_data.get("agreement_count", 0)
+            contradiction_count = len(match_data.get("contradictions", []))
+            return (backing_count, -contradiction_count)
 
-        sorted_matches = sorted(combined_data, key=get_score, reverse=True)
+        sorted_matches = sorted(data, key=get_score, reverse=True)
         
         # 2. FILTER OUT BOT A'S PICKS
         main_candidates = [m for m in sorted_matches if m['consensus_pick'] in ["1", "2"] and not self.is_excluded(m['match'], exclusions)]
@@ -669,42 +510,38 @@ class ConsensusEngine:
             pick_str = f"{m['match']} ➔ {m['consensus_pick']}"
             if pick_str not in final_main_picks:
                 final_main_picks.append(pick_str)
-            if len(final_main_picks) == 6:
-                break
+            if len(final_main_picks) == 6: break
                 
         if len(final_main_picks) < 6:
             for corner in filtered_corners:
                 corner_pick = f"{corner['match']} ➔ Over 8.5 Corners (Avg: {corner['avg_corners']})"
                 if corner_pick not in final_main_picks:
                     final_main_picks.append(corner_pick)
-                if len(final_main_picks) == 6:
-                    break
+                if len(final_main_picks) == 6: break
         
         reserve_picks = []
         for d in draw_candidates:
             pick_str = f"{d['match']} ➔ {d['consensus_pick']}"
             if pick_str not in reserve_picks and pick_str not in final_main_picks:
                 reserve_picks.append(pick_str)
-            if len(reserve_picks) == 2:
-                break
+            if len(reserve_picks) == 2: break
                 
         if len(reserve_picks) < 2:
             leftovers = [f"{m['match']} ➔ {m['consensus_pick']}" for m in main_candidates]
             for pick_str in leftovers:
                 if pick_str not in final_main_picks and pick_str not in reserve_picks:
                     reserve_picks.append(pick_str)
-                if len(reserve_picks) == 2:
-                    break
+                if len(reserve_picks) == 2: break
                     
         if len(reserve_picks) < 2:
             for corner in filtered_corners:
                 corner_pick = f"{corner['match']} ➔ Over 8.5 Corners (Avg: {corner['avg_corners']})"
                 if corner_pick not in final_main_picks and corner_pick not in reserve_picks:
                     reserve_picks.append(corner_pick)
-                if len(reserve_picks) == 2:
-                    break
+                if len(reserve_picks) == 2: break
 
         if len(final_main_picks) < 3:
+            self.diagnostics["QuantEngine"] = "🟡 Insufficient Matches"
             return "No unique high-conviction matches found for Bot B today."
             
         ticket1_mains = final_main_picks[:3]
@@ -720,9 +557,39 @@ class ConsensusEngine:
 
         reserve1 = reserve_picks[0] if len(reserve_picks) > 0 else None
         reserve2 = reserve_picks[1] if len(reserve_picks) > 1 else None
-        
+
+        # GEMINI AI TICKET GENERATOR
+        if GEMINI_API_KEY:
+            try:
+                model = genai.GenerativeModel('gemini-2.5-flash')
+                prompt = f"""
+                You are 'Titan AI', an elite quantitative sports betting engine. 
+                Format the following algorithmic football predictions into a clean, highly professional Telegram message.
+
+                Ticket 1 (50% Daily Stake):
+                Matches: {', '.join(ticket1_mains)}
+                Reserve Pick: {reserve1 if reserve1 else 'None'}
+
+                Ticket 2 (50% Daily Stake):
+                Matches: {', '.join(ticket2_mains)}
+                Reserve Pick: {reserve2 if reserve2 else 'None'}
+
+                Rules:
+                1. Start your message with the exact header: 🤖 **TITAN ALGORITHMIC TICKETS (BOT B)** 🤖
+                2. Format the tickets beautifully using list points and emojis (🛡️ for tickets, • for matches, 🔄 for reserves).
+                3. Keep the exact match names and predictions provided. Do not invent or change anything.
+                4. Write a brief '🧠 AI Quant Insight' at the bottom of the message. In 1-2 sentences, mention that these selections were generated using strict multi-site consensus and successfully cross-referenced against Bot A's ledger to guarantee zero overlap. Keep the tone sharp, professional, and confident.
+                """
+                response = model.generate_content(prompt)
+                self.diagnostics["QuantEngine"] = "🟢 Bot B AI-Formatted Tickets"
+                return response.text.strip()
+            except Exception as e:
+                self.diagnostics["QuantEngine"] = f"🟡 AI Error (Using Fallback Text)"
+                pass # Fallback to standard text generation below
+
+        # STANDARD FALLBACK TEXT GENERATION (If Gemini fails or no API key is provided)
+        self.diagnostics["QuantEngine"] = "🟢 Bot B Logic Tickets"
         ticket_text = "🤖 **TITAN ALGORITHMIC TICKETS (BOT B)** 🤖\n\n"
-        
         ticket_text += "🛡️ **Ticket 1: Premium Slip (50% of Daily Stake)**\n"
         for pick in ticket1_mains: ticket_text += f"• {pick}\n"
         if reserve1: ticket_text += f"🔄 [RESERVE PICK]: {reserve1}\n"
@@ -868,45 +735,27 @@ class ConsensusEngine:
                 base_tasks = [
                     loop.run_in_executor(pool, self.fetch_and_scrape_sync, n, c)
                     for n, c in self.configs.items()
-                    if n not in {"Golsinyali", "SoccerAiTips"}
                 ]
                 base_tasks.append(loop.run_in_executor(pool, self.fetch_corners_sync))
-                
-                if "Golsinyali" in self.configs:
-                    base_tasks.append(loop.run_in_executor(pool, self.fetch_golsinyali_sync))
-                if "SoccerAiTips" in self.configs:
-                    base_tasks.append(loop.run_in_executor(pool, self.fetch_socceraitips_sync))
-                
                 await asyncio.gather(*base_tasks)
 
-            (
-                core_matches,
-                fallback_matches,
-                structured_tickets,
-                core_ai_input_data,
-                fallback_ai_input_data,
-                req_threshold,
-                fallback_threshold,
-                fallback_active,
-            ) = self.process_consensus_signals()
-
-            agreed_matches = core_matches if core_matches else fallback_matches
+            agreed_matches, structured_tickets, ai_input_data, req_threshold = self.process_consensus_signals()
 
             active_corner_teams = []
             for match in self.master_matrix.keys():
                 parts = match.split(" vs ")
                 if len(parts) == 2:
                     h, a = parts[0].strip(), parts[1].strip()
-                    if h in self.corner_stats and self.corner_stats[h] >= 8.5:
+                    if h in self.corner_stats and self.corner_stats[h] >= 9.5:
                         active_corner_teams.append({"match": match, "team": h, "avg_corners": self.corner_stats[h]})
-                    if a in self.corner_stats and self.corner_stats[a] >= 8.5:
+                    if a in self.corner_stats and self.corner_stats[a] >= 9.5:
                         active_corner_teams.append({"match": match, "team": a, "avg_corners": self.corner_stats[a]})
 
             algorithmic_message = None
-            if core_ai_input_data or fallback_ai_input_data or active_corner_teams:
-                algorithmic_message = self.build_algorithmic_ticket(core_ai_input_data, fallback_ai_input_data, active_corner_teams)
+            if ai_input_data or active_corner_teams:
+                algorithmic_message = self.build_algorithmic_ticket(ai_input_data, active_corner_teams)
 
-            should_lock = (current_hour >= 5) and (algorithmic_message is not None or not (core_ai_input_data or fallback_ai_input_data))
+            should_lock = (current_hour >= 5) and (algorithmic_message is not None or not (ai_input_data))
 
             memory[today_date] = {
                 "locked": should_lock,
@@ -924,10 +773,7 @@ class ConsensusEngine:
 
         if not is_already_locked or settled_reports:
             msg = ""
-            if "fallback_active" in locals() and fallback_active:
-                msg += "🤝 **RAW CONSENSUS DATA (3+ SITES AGREEMENT)** 🤝\n\n"
-            else:
-                msg += "🤝 **RAW CONSENSUS DATA (4+ SITES AGREEMENT)** 🤝\n\n"
+            msg += "🤝 **RAW CONSENSUS DATA (3+ SITES AGREEMENT)** 🤝\n\n"
 
             if agreed_matches:
                 for match in agreed_matches:
