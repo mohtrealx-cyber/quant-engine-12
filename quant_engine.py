@@ -35,46 +35,26 @@ def get_dynamic_configs():
         "Statarea": {
             "url": f"https://www.statarea.com/predictions/date/{today_date}/",
             "fallback_url": None,
-            "row_selector": "div", "row_class": "matchrow",
-            "home_selector": "div", "home_class": "name", "home_index": 0,
-            "away_selector": "div", "away_class": "name", "away_index": 1,
-            "pick_selector": "div", "pick_class": "type1", "pick_index": 0,
             "use_scraperapi": False  
         },
         "Vitibet": {
             "url": f"https://www.vitibet.com/index.php?clanek=quicktips&sekce=fotbal&lang=en&cb={cb}",
             "fallback_url": None,
-            "row_selector": "a", "row_class": "livescore-match-row",
-            "home_selector": "span", "home_class": "livescore-team-name", "home_index": 0,
-            "away_selector": "span", "home_class": "livescore-team-name", "home_index": 1,
-            "pick_selector": "span", "pick_class": "tip-indicator-circle", "pick_index": 0,
             "use_scraperapi": False
         },
         "Zulubet": {  
             "url": "https://www.zulubet.com/",
             "fallback_url": "http://www.zulubet.com/",
-            "row_selector": "tr", "row_class": "",
-            "home_selector": "", "home_class": "", "home_index": 0,
-            "away_selector": "", "away_class": "", "away_index": 0,
-            "pick_selector": "", "pick_class": "", "pick_index": 0,
             "use_scraperapi": False 
         },
         "WinDrawWin": {
             "url": "https://www.windrawwin.com/predictions/today/",
             "fallback_url": "https://www.predictz.com/predictions/",
-            "row_selector": "div", "row_class": "wtrow",
-            "home_selector": "div", "home_class": "wttmobh", "home_index": 0,
-            "away_selector": "div", "away_class": "wttmoba", "away_index": 0,
-            "pick_selector": "div", "pick_class": "wtoddsdesc", "pick_index": 0,
             "use_scraperapi": True
         },
         "SoccerVista": {
             "url": "https://www.soccervista.com/",
             "fallback_url": "https://www.soccervista.com/predictions/",
-            "row_selector": "tr", "row_class": "",
-            "home_selector": "td", "home_class": "", "home_index": 0,
-            "away_selector": "td", "home_class": "", "home_index": 1,
-            "pick_selector": "td", "pick_class": "", "pick_index": 4,
             "use_scraperapi": True
         },
         "Golsinyali": {
@@ -324,7 +304,13 @@ class ConsensusEngine:
         url = "https://www.totalcorner.com/match/today"
         for attempt in range(1, 4):
             try:
-                r = tls_requests.get(url, impersonate="chrome124", timeout=25)
+                if attempt == 1:
+                    r = tls_requests.get(url, impersonate="chrome124", timeout=30)
+                elif attempt == 2 and SCRAPER_API_KEY:
+                    r = requests.get("http://api.scraperapi.com/", params={"api_key": SCRAPER_API_KEY, "url": url, "premium": "true"}, timeout=45)
+                else:
+                    r = tls_requests.get(url, impersonate="safari17_0", timeout=35)
+
                 if r.status_code == 200:
                     soup = BeautifulSoup(r.content, 'html.parser')
                     rows = soup.find_all("tr")
@@ -348,13 +334,13 @@ class ConsensusEngine:
                     self.diagnostics["CornersEngine"] = f"🟢 OK ({valid_corners} High-Corner Teams)"
                     return
                 elif r.status_code in [403, 500, 502, 503, 504, 429]:
-                    time.sleep(2 * attempt)
+                    time.sleep(3 * attempt)
                     continue
                 else:
                     self.diagnostics["CornersEngine"] = f"🔴 FAILED (HTTP {r.status_code})"
                     return
             except Exception:
-                time.sleep(2 * attempt)
+                time.sleep(3 * attempt)
                 continue
 
         self.diagnostics["CornersEngine"] = "🔴 TIMEOUT/ERROR"
@@ -374,13 +360,11 @@ class ConsensusEngine:
                     if attempt == 1 and SCRAPER_API_KEY:
                         r = requests.get("http://api.scraperapi.com/", params={"api_key": SCRAPER_API_KEY, "url": active_url, "premium": "true", "country_code": "uk"}, timeout=req_timeout)
                     elif attempt == 2 and SCRAPER_API_KEY:
-                        active_url = "https://www.predictz.com/predictions/"
-                        r = requests.get("http://api.scraperapi.com/", params={"api_key": SCRAPER_API_KEY, "url": active_url, "premium": "true", "country_code": "us", "antibot": "true"}, timeout=req_timeout)
-                    elif attempt == 3:
-                        active_url = "https://www.predictz.com/predictions/"
+                        r = requests.get("http://api.scraperapi.com/", params={"api_key": SCRAPER_API_KEY, "url": active_url, "premium": "true", "render": "true"}, timeout=req_timeout)
+                    elif attempt == 3 and SCRAPER_API_KEY:
+                        r = requests.get("http://api.scraperapi.com/", params={"api_key": SCRAPER_API_KEY, "url": active_url, "premium": "true", "render": "true", "antibot": "true"}, timeout=req_timeout)
+                    else:
                         r = tls_requests.get(active_url, impersonate="chrome124", timeout=req_timeout)
-                    elif attempt == 4 and SCRAPER_API_KEY:
-                        r = requests.get("http://api.scraperapi.com/", params={"api_key": SCRAPER_API_KEY, "url": active_url, "premium": "true"}, timeout=req_timeout)
                 elif site_name == "SoccerVista":
                     if attempt <= 3 and SCRAPER_API_KEY:
                         r = requests.get("http://api.scraperapi.com/", params={"api_key": SCRAPER_API_KEY, "url": active_url, "premium": "true", "render": "true"}, timeout=req_timeout)
@@ -656,6 +640,11 @@ class ConsensusEngine:
         draw_candidates = [m for m in sorted_matches if m['consensus_pick'] == "X" and not self.is_excluded(m['match'], exclusions)]
         filtered_corners = [c for c in active_corner_teams if not self.is_excluded(c['match'], exclusions)]
         
+        # STRICT RULE: A ticket must have at least 1 actual match. Corners cannot build a ticket from scratch.
+        if len(main_candidates) + len(draw_candidates) < 1:
+            self.diagnostics["QuantEngine"] = "🟡 Insufficient Matches"
+            return "No unique high-conviction matches found for Bot B today."
+
         final_main_picks = []
         for m in main_candidates:
             pick_str = f"{m['match']} ➔ {m['consensus_pick']}"
@@ -664,7 +653,8 @@ class ConsensusEngine:
             if len(final_main_picks) == 6:
                 break
                 
-        if len(final_main_picks) < 6:
+        # Only use corners as filler if we already have some actual matches
+        if len(final_main_picks) > 0 and len(final_main_picks) < 6:
             for corner in filtered_corners:
                 corner_pick = f"{corner['match']} ➔ Over 8.5 Corners (Avg: {corner['avg_corners']})"
                 if corner_pick not in final_main_picks:
@@ -945,7 +935,7 @@ class ConsensusEngine:
             
             self.send_telegram_alert(msg)
 
-            if algorithmic_message and not is_already_locked:
+            if algorithmic_message and not is_already_locked and "No unique high-conviction matches found" not in algorithmic_message:
                 time.sleep(1.5)
                 self.send_telegram_alert(algorithmic_message)
 
