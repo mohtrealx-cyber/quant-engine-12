@@ -78,6 +78,7 @@ class ConsensusEngine:
         self.diagnostics = {}
         self.golsinyali_session = tls_requests.Session(impersonate="chrome124")
 
+    # BOT B IS A READER ONLY - IT NEVER WRITES TO THE GIST
     def get_bot_a_exclusions(self):
         if not GIST_ID or not GIST_TOKEN:
             self.diagnostics["GistSync"] = "🟡 MISSING CREDENTIALS"
@@ -186,7 +187,6 @@ class ConsensusEngine:
             headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0.0.0 Safari/537.36"}
             r = self.golsinyali_session.get(url, headers=headers, timeout=25)
             
-            # ScraperAPI Fallback if Cloudflare blocks TLS Spoofing
             if (r.status_code != 200 or "just a moment" in r.text.lower()) and SCRAPER_API_KEY:
                 r = requests.get("http://api.scraperapi.com/", params={"api_key": SCRAPER_API_KEY, "url": url, "premium": "true", "render": "true"}, timeout=45)
 
@@ -243,16 +243,13 @@ class ConsensusEngine:
                                 pick = max(vals, key=vals.get)
 
                         if h_team and a_team and pick:
-                            res = self.log_prediction_qa("Golsinyali", h_team, a_team, pick)
-                            if res:
-                                valid_count += 1
-                                if res["matched_existing_fixture"]: matched_count += 1
-                                else: new_count += 1
+                            self.log_prediction_qa("Golsinyali", h_team, a_team, pick)
+                            valid_count += 1
                 except:
                     continue
 
             if valid_count > 0:
-                self.diagnostics["Golsinyali"] = f"🟢 OK ({valid_count} Today | {matched_count} Matched | {new_count} New)"
+                self.diagnostics["Golsinyali"] = f"🟢 OK ({valid_count} Today)"
             else:
                 self.diagnostics["Golsinyali"] = "🟡 NO PREDICTIONS"
         except Exception as e:
@@ -856,6 +853,9 @@ class ConsensusEngine:
             algorithmic_message = None
             if core_ai_input_data or fallback_ai_input_data:
                 algorithmic_message = self.build_algorithmic_ticket(core_ai_input_data, fallback_ai_input_data)
+            else:
+                self.diagnostics["QuantEngine"] = "⚪ SKIPPED (0 Matches)"
+                self.diagnostics["GistSync"] = "⚪ SKIPPED"
 
             should_lock = (current_hour >= 5) and (algorithmic_message is not None or not (core_ai_input_data or fallback_ai_input_data))
 
