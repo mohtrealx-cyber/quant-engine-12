@@ -1418,5 +1418,15 @@
         ],
         "ai_optimized_message": "No unique high-conviction matches found for Bot B today.",
         "tickets": []
+    },
+    "2026-10-20": {
+        "locked": true,
+        "agreed_matches": [
+            "\u2022 **As Roma vs Slovan Bratislava** \u2794 1\n  \u21b3 \u2705 Backed by: `Zulubet + Statarea + Vitibet`\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa Golsinyali: Not Listed\n",
+            "\u2022 **Fc Porto vs Psv Eindhoven** \u2794 1\n  \u21b3 \u2705 Backed by: `Zulubet + Statarea + Vitibet`\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa Golsinyali: Not Listed\n",
+            "\u2022 **Manchester City vs Aek Athens Fc** \u2794 1\n  \u21b3 \u2705 Backed by: `Zulubet + Statarea + Vitibet`\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa Golsinyali: Not Listed\n"
+        ],
+        "ai_optimized_message": "No unique high-conviction matches found for Bot B today.",
+        "tickets": []
     }
 }
