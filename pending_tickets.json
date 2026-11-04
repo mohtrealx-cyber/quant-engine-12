@@ -1576,5 +1576,20 @@
                 "score": "-"
             }
         ]
+    },
+    "2026-11-04": {
+        "locked": true,
+        "agreed_matches": [
+            "\u2022 **Fc Porto vs Napoli** \u2794 1\n  \u21b3 \u2705 Backed by: `Zulubet + Statarea + Vitibet + SoccerVista`\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa Golsinyali: Not Listed\n"
+        ],
+        "ai_optimized_message": "No unique high-conviction matches found for Bot B today.",
+        "tickets": [
+            {
+                "match": "Fc Porto vs Napoli",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            }
+        ]
     }
 }
