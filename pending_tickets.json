@@ -1591,5 +1591,90 @@
                 "score": "-"
             }
         ]
+    },
+    "2026-11-05": {
+        "locked": true,
+        "agreed_matches": [
+            "\u2022 **Ac Milan vs Ferencvarosi Tc** \u2794 1\n  \u21b3 \u2705 Backed by: `Zulubet + Statarea + Vitibet + WinDrawWin`\n  \u21b3 \u26a0\ufe0f SoccerVista backed: 2\n  \u21b3 \u26aa Golsinyali: Not Listed\n",
+            "\u2022 **Levski Sofia vs Jagiellonia** \u2794 1\n  \u21b3 \u2705 Backed by: `Zulubet + Statarea + Vitibet + WinDrawWin`\n  \u21b3 \u26a0\ufe0f SoccerVista backed: 2\n  \u21b3 \u26aa Golsinyali: Not Listed\n",
+            "\u2022 **Nec Nijmegen vs Omonia Nicosia** \u2794 1\n  \u21b3 \u2705 Backed by: `Zulubet + Statarea + Vitibet + WinDrawWin`\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa Golsinyali: Not Listed\n",
+            "\u2022 **Real Sociedad vs Lyon** \u2794 1\n  \u21b3 \u2705 Backed by: `Zulubet + Statarea + Vitibet + WinDrawWin + SoccerVista`\n  \u21b3 \u26aa Golsinyali: Not Listed\n",
+            "\u2022 **Atalanta vs Kairat Almaty** \u2794 1\n  \u21b3 \u2705 Backed by: `Zulubet + Statarea + Vitibet + WinDrawWin`\n  \u21b3 \u26a0\ufe0f SoccerVista backed: 2\n  \u21b3 \u26aa Golsinyali: Not Listed\n",
+            "\u2022 **Bayer Leverkusen vs Marseille** \u2794 1\n  \u21b3 \u2705 Backed by: `Zulubet + Statarea + Vitibet + WinDrawWin`\n  \u21b3 \u26a0\ufe0f SoccerVista backed: 2\n  \u21b3 \u26aa Golsinyali: Not Listed\n",
+            "\u2022 **Benfica vs Lech Poznan** \u2794 1\n  \u21b3 \u2705 Backed by: `Zulubet + Statarea + Vitibet + WinDrawWin + SoccerVista`\n  \u21b3 \u26aa Golsinyali: Not Listed\n",
+            "\u2022 **Sturm Graz vs Celje** \u2794 1\n  \u21b3 \u2705 Backed by: `Zulubet + Statarea + Vitibet + WinDrawWin`\n  \u21b3 \u26a0\ufe0f SoccerVista backed: 2\n  \u21b3 \u26aa Golsinyali: Not Listed\n",
+            "\u2022 **Monaco vs Fc Nordsjaelland** \u2794 1\n  \u21b3 \u2705 Backed by: `Zulubet + Statarea + Vitibet + WinDrawWin`\n  \u21b3 \u26a0\ufe0f SoccerVista backed: X\n  \u21b3 \u26aa Golsinyali: Not Listed\n",
+            "\u2022 **Panathinaikos vs Cska Sofia** \u2794 1\n  \u21b3 \u2705 Backed by: `Zulubet + Statarea + Vitibet + WinDrawWin + SoccerVista`\n  \u21b3 \u26aa Golsinyali: Not Listed\n",
+            "\u2022 **St. Truiden vs Brann** \u2794 1\n  \u21b3 \u2705 Backed by: `Zulubet + Statarea + Vitibet + WinDrawWin`\n  \u21b3 \u26a0\ufe0f SoccerVista backed: 2\n  \u21b3 \u26aa Golsinyali: Not Listed\n"
+        ],
+        "ai_optimized_message": "\ud83e\udd16 **TITAN ALGORITHMIC TICKETS (BOT B)** \ud83e\udd16\n\n\ud83d\udee1\ufe0f **Ticket 1: Premium Slip (50% of Daily Stake)**\n\u2022 Ac Milan vs Ferencvarosi Tc \u2794 1\n\u2022 Levski Sofia vs Jagiellonia \u2794 1\n\u2022 Atalanta vs Kairat Almaty \u2794 1\n\ud83d\udd04 [RESERVE PICK]: St. Truiden vs Brann \u2794 1\n\n\ud83d\udee1\ufe0f **Ticket 2: Premium Slip (50% of Daily Stake)**\n\u2022 Bayer Leverkusen vs Marseille \u2794 1\n\u2022 Sturm Graz vs Celje \u2794 1\n\u2022 Monaco vs Fc Nordsjaelland \u2794 1\n\ud83d\udd04 [RESERVE PICK]: Anderlecht vs Red Bull Salzburg \u2794 1\n",
+        "tickets": [
+            {
+                "match": "Ac Milan vs Ferencvarosi Tc",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Levski Sofia vs Jagiellonia",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Nec Nijmegen vs Omonia Nicosia",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Real Sociedad vs Lyon",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Atalanta vs Kairat Almaty",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Bayer Leverkusen vs Marseille",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Benfica vs Lech Poznan",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Sturm Graz vs Celje",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Monaco vs Fc Nordsjaelland",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Panathinaikos vs Cska Sofia",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "St. Truiden vs Brann",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            }
+        ]
     }
 }
