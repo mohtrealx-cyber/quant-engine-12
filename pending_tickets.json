@@ -1676,5 +1676,34 @@
                 "score": "-"
             }
         ]
+    },
+    "2026-11-06": {
+        "locked": true,
+        "agreed_matches": [
+            "\u2022 **Persepam Madura Utd vs Arema Fc** \u2794 1\n  \u21b3 \u2705 Backed by: `Zulubet + Statarea + Vitibet + WinDrawWin`\n  \u21b3 \u26aa SoccerVista: Not Listed\n  \u21b3 \u26aa Golsinyali: Not Listed\n",
+            "\u2022 **Everton vs Coventry** \u2794 1\n  \u21b3 \u2705 Backed by: `Zulubet + Statarea + Golsinyali + Vitibet`\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26a0\ufe0f SoccerVista backed: 2\n",
+            "\u2022 **Sevilla vs Alaves** \u2794 1\n  \u21b3 \u2705 Backed by: `Golsinyali + Vitibet + WinDrawWin + SoccerVista`\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa Zulubet: Not Listed\n"
+        ],
+        "ai_optimized_message": "\ud83e\udd16 **TITAN ALGORITHMIC TICKETS (BOT B)** \ud83e\udd16\n\n\ud83d\udee1\ufe0f **Ticket 1: Premium Slip (50% of Daily Stake)**\n\u2022 Sepahan Fc vs Malavan \u2794 1\n\u2022 Tikve\u0161 vs Skopje \u2794 1\n\u2022 Persepolis Fc vs Fajr Sepasi \u2794 1\n\ud83d\udd04 [RESERVE PICK]: Wisla Krakow vs Cracovia Krakow \u2794 1\n\n\ud83d\udee1\ufe0f **Ticket 2: Premium Slip (50% of Daily Stake)**\n\u2022 Vvv Venlo vs Jong Psv U21 \u2794 1\n\u2022 Hammarby vs If Elfsborg \u2794 1\n\u2022 Maccabi Tel Aviv vs Maccabi Petah Tikva \u2794 1\n\ud83d\udd04 [RESERVE PICK]: Motor Lublin vs Wisla Plock \u2794 1\n",
+        "tickets": [
+            {
+                "match": "Persepam Madura Utd vs Arema Fc",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Everton vs Coventry",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Sevilla vs Alaves",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            }
+        ]
     }
 }
