@@ -1875,5 +1875,34 @@
                 "score": "-"
             }
         ]
+    },
+    "2026-11-09": {
+        "locked": true,
+        "agreed_matches": [
+            "\u2022 **Hvidovre vs Aarhus Fremad** \u2794 1\n  \u21b3 \u2705 Backed by: `Zulubet + Vitibet + Golsinyali + SoccerVista`\n  \u21b3 \u26aa Statarea: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n",
+            "\u2022 **Sabadell vs Real Sociedad Ii** \u2794 1\n  \u21b3 \u2705 Backed by: `Zulubet + Statarea + Vitibet + Golsinyali`\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
+            "\u2022 **Plymouth Parkway vs Berkhamsted** \u2794 1\n  \u21b3 \u2705 Backed by: `Statarea + Vitibet + Golsinyali + SoccerVista`\n  \u21b3 \u26aa Zulubet: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n"
+        ],
+        "ai_optimized_message": "\ud83e\udd16 **TITAN ALGORITHMIC TICKETS (BOT B)** \ud83e\udd16\n\n\ud83d\udee1\ufe0f **Ticket 1: Premium Slip (50% of Daily Stake)**\n\u2022 Hvidovre vs Aarhus Fremad \u2794 1\n\u2022 Sabadell vs Real Sociedad Ii \u2794 1\n\u2022 Ikorodu City vs Inter Lagos \u2794 1\n\ud83d\udd04 [RESERVE PICK]: Torreense vs Uni\u00e3o De Leiria \u2794 1\n\n\ud83d\udee1\ufe0f **Ticket 2: Premium Slip (50% of Daily Stake)**\n\u2022 Atletico Madrid W vs Fc Levante Badalona W \u2794 1\n\u2022 Fc Botosani vs O\u0163elul \u2794 1\n\u2022 Pineto vs Vis Pesaro \u2794 1\n",
+        "tickets": [
+            {
+                "match": "Hvidovre vs Aarhus Fremad",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Sabadell vs Real Sociedad Ii",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Plymouth Parkway vs Berkhamsted",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            }
+        ]
     }
 }
