@@ -1904,5 +1904,20 @@
                 "score": "-"
             }
         ]
+    },
+    "2026-11-10": {
+        "locked": true,
+        "agreed_matches": [
+            "\u2022 **Stockport County vs Tranmere** \u2794 1\n  \u21b3 \u2705 Backed by: `Zulubet + Statarea + Golsinyali + SoccerVista`\n  \u21b3 \u26aa Vitibet: Not Listed\n  \u21b3 \u26aa WinDrawWin: Not Listed\n"
+        ],
+        "ai_optimized_message": "No unique high-conviction matches found for Bot B today.",
+        "tickets": [
+            {
+                "match": "Stockport County vs Tranmere",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            }
+        ]
     }
 }
