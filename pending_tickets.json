@@ -1981,5 +1981,41 @@
                 "score": "-"
             }
         ]
+    },
+    "2026-11-14": {
+        "locked": true,
+        "agreed_matches": [
+            "\u2022 **Kosovo vs Israel** \u2794 1\n  \u21b3 \u2705 Backed by: `Zulubet + Golsinyali + Statarea + Vitibet`\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
+            "\u2022 **Norway vs Wales** \u2794 1\n  \u21b3 \u2705 Backed by: `Zulubet + Golsinyali + Statarea + Vitibet`\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
+            "\u2022 **Mallorca vs Cordoba** \u2794 1\n  \u21b3 \u2705 Backed by: `Zulubet + Statarea + Vitibet + Golsinyali`\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
+            "\u2022 **Portugal vs Denmark** \u2794 1\n  \u21b3 \u2705 Backed by: `Zulubet + Statarea + Golsinyali + Vitibet`\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n"
+        ],
+        "ai_optimized_message": "No unique high-conviction matches found for Bot B today.",
+        "tickets": [
+            {
+                "match": "Kosovo vs Israel",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Norway vs Wales",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Mallorca vs Cordoba",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Portugal vs Denmark",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            }
+        ]
     }
 }
