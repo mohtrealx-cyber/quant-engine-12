@@ -2058,5 +2058,27 @@
         ],
         "ai_optimized_message": "No unique high-conviction matches found for Bot B today.",
         "tickets": []
+    },
+    "2026-11-17": {
+        "locked": true,
+        "agreed_matches": [
+            "\u2022 **Ukraine vs Georgia** \u2794 1\n  \u21b3 \u2705 Backed by: `Zulubet + Statarea + Golsinyali + Vitibet`\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
+            "\u2022 **Hungary vs Northern Ireland** \u2794 1\n  \u21b3 \u2705 Backed by: `Zulubet + Statarea + Golsinyali + Vitibet`\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n"
+        ],
+        "ai_optimized_message": "\ud83e\udd16 **TITAN ALGORITHMIC TICKETS (BOT B)** \ud83e\udd16\n\n\ud83d\udee1\ufe0f **Ticket 1: Premium Slip (50% of Daily Stake)**\n\u2022 South Sudan vs Angola \u2794 2\n\u2022 Plateau United vs Kun Khalifat Fc \u2794 1\n\u2022 Wales vs Portugal \u2794 2\n\ud83d\udd04 [RESERVE PICK]: Poland vs Sweden \u2794 1\n\n\ud83d\udee1\ufe0f **Ticket 2: Premium Slip (50% of Daily Stake)**\n\u2022 Denmark vs Norway \u2794 1\n\u2022 Israel vs Austria \u2794 2\n\u2022 Rep. Of Ireland vs Kosovo \u2794 1\n\ud83d\udd04 [RESERVE PICK]: Bosnia & Herzegovina vs Romania \u2794 1\n",
+        "tickets": [
+            {
+                "match": "Ukraine vs Georgia",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Hungary vs Northern Ireland",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            }
+        ]
     }
 }
