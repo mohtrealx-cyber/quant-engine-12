@@ -2276,5 +2276,34 @@
                 "score": "-"
             }
         ]
+    },
+    "2026-11-28": {
+        "locked": true,
+        "agreed_matches": [
+            "\u2022 **Frosinone vs Parma** \u2794 1\n  \u21b3 \u2705 Backed by: `Zulubet + Statarea + Golsinyali + Vitibet`\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
+            "\u2022 **Vfb Stuttgart vs Eintracht Frankfurt** \u2794 1\n  \u21b3 \u2705 Backed by: `Zulubet + Statarea + Vitibet + Golsinyali`\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n",
+            "\u2022 **Real Madrid vs Alaves** \u2794 1\n  \u21b3 \u2705 Backed by: `Zulubet + Statarea + Golsinyali + Vitibet`\n  \u21b3 \u26aa WinDrawWin: Not Listed\n  \u21b3 \u26aa SoccerVista: Not Listed\n"
+        ],
+        "ai_optimized_message": "\ud83e\udd16 **TITAN ALGORITHMIC TICKETS (BOT B)** \ud83e\udd16\n\n\ud83d\udee1\ufe0f **Ticket 1: Premium Slip (50% of Daily Stake)**\n\u2022 Hamburger Sv vs Bayern M\u00fcnchen \u2794 2\n\u2022 Harrogate Town vs Yeovil Town \u2794 1\n\u2022 Stockport County vs Leyton Orient \u2794 1\n\ud83d\udd04 [RESERVE PICK]: Paris Saint Germain vs Lorient \u2794 1\n\n\ud83d\udee1\ufe0f **Ticket 2: Premium Slip (50% of Daily Stake)**\n\u2022 Birmingham vs Bolton \u2794 1\n\u2022 Leeds vs Coventry \u2794 1\n\u2022 Bodo/Glimt vs Kfum Oslo \u2794 1\n\ud83d\udd04 [RESERVE PICK]: Inter vs Genoa \u2794 1\n",
+        "tickets": [
+            {
+                "match": "Frosinone vs Parma",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Vfb Stuttgart vs Eintracht Frankfurt",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            },
+            {
+                "match": "Real Madrid vs Alaves",
+                "prediction": "1",
+                "status": "PENDING",
+                "score": "-"
+            }
+        ]
     }
 }
